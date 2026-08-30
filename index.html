@@ -9,6 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- SheetJS untuk export Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -338,7 +340,6 @@
         .tag-warga { background: #e1f0ea; color: #14634b; }
         .tag-tamu { background: #fff1e0; color: #a1581c; }
         .tag-iuran { background: #e3eaf9; color: #1f4780; }
-        .tag-info { background: #fef3d7; color: #8a6d1c; }
         .no-urut {
             text-align: center;
             font-weight: 600;
@@ -440,13 +441,13 @@
             text-decoration: underline;
         }
 
-        .dokumentasi-grid, .komunikasi-grid {
+        .dokumentasi-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
             margin-top: 0.5rem;
         }
-        .dok-item, .kom-item {
+        .dok-item {
             background: white;
             border-radius: 20px;
             border: 1px solid #e9edf4;
@@ -454,7 +455,7 @@
             overflow: hidden;
             transition: 0.2s;
         }
-        .dok-item:hover, .kom-item:hover {
+        .dok-item:hover {
             box-shadow: 0 8px 25px rgba(0,0,0,0.1);
             transform: translateY(-3px);
         }
@@ -474,32 +475,32 @@
             color: #2a7f6e;
             font-size: 3rem;
         }
-        .dok-item .dok-body, .kom-item .kom-body {
+        .dok-item .dok-body {
             padding: 1rem 1.2rem 1.2rem;
         }
-        .dok-item .dok-title, .kom-item .kom-title {
+        .dok-item .dok-title {
             font-weight: 600;
             color: #0b2b3d;
             font-size: 1rem;
             margin-bottom: 0.3rem;
         }
-        .dok-item .dok-date, .kom-item .kom-date {
+        .dok-item .dok-date {
             font-size: 0.8rem;
             color: #4a6a7a;
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        .dok-item .dok-date i, .kom-item .kom-date i {
+        .dok-item .dok-date i {
             color: #2a7f6e;
         }
-        .dok-item .dok-description, .kom-item .kom-description {
+        .dok-item .dok-description {
             font-size: 0.85rem;
             color: #2a445a;
             margin-top: 0.5rem;
             line-height: 1.5;
         }
-        .dok-item .dok-actions, .kom-item .kom-actions {
+        .dok-item .dok-actions {
             margin-top: 0.8rem;
             padding-top: 0.8rem;
             border-top: 1px solid #e9edf4;
@@ -507,7 +508,7 @@
             gap: 6px;
             flex-wrap: wrap;
         }
-        .btn-hapus-dok, .btn-hapus-kom {
+        .btn-hapus-dok {
             background: #e74c3c;
             border: none;
             color: white;
@@ -521,7 +522,7 @@
             align-items: center;
             gap: 4px;
         }
-        .btn-hapus-dok:hover, .btn-hapus-kom:hover {
+        .btn-hapus-dok:hover {
             background: #c0392b;
         }
 
@@ -1004,6 +1005,68 @@
             background: #c0392b;
         }
 
+        /* Filter iuran */
+        .filter-iuran {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            background: white;
+            padding: 0.8rem 1.2rem;
+            border-radius: 16px;
+            border: 1px solid #e9edf4;
+            margin-bottom: 1.2rem;
+        }
+        .filter-iuran label {
+            font-weight: 500;
+            font-size: 0.8rem;
+            color: #1d3b4f;
+        }
+        .filter-iuran select, .filter-iuran input {
+            padding: 0.3rem 0.8rem;
+            border-radius: 40px;
+            border: 1px solid #d0dbe9;
+            font-size: 0.8rem;
+            background: #fafcff;
+        }
+        .filter-iuran .btn-filter {
+            background: #1c5f4e;
+            border: none;
+            color: white;
+            padding: 0.3rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .filter-iuran .btn-filter:hover {
+            background: #134a3b;
+        }
+        .filter-iuran .btn-export {
+            background: #2980b9;
+            border: none;
+            color: white;
+            padding: 0.3rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-iuran .btn-export:hover {
+            background: #1a6a9a;
+        }
+        .filter-iuran .btn-export.excel {
+            background: #27ae60;
+        }
+        .filter-iuran .btn-export.excel:hover {
+            background: #1e8449;
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 220px;
@@ -1022,12 +1085,16 @@
             .kk-table, .tamu-detail-table { font-size: 0.65rem; min-width: 700px; }
             .stats-grid { grid-template-columns: 1fr 1fr; }
             .settings-grid { grid-template-columns: 1fr; }
-            .dokumentasi-grid, .komunikasi-grid { grid-template-columns: 1fr; }
+            .dokumentasi-grid { grid-template-columns: 1fr; }
             .modal-file-view { max-width: 100% !important; }
             .modal-file-view .file-display img { max-height: 300px; }
             .modal-file-view .file-display .pdf-view { height: 300px; }
             .hamburger {
                 display: flex !important;
+            }
+            .filter-iuran {
+                flex-direction: column;
+                align-items: stretch;
             }
         }
         .hamburger {
@@ -1138,14 +1205,11 @@
         <button class="menu-item active" data-tab="tab-keluarga">
             <span class="icon-keluarga"><i class="fas fa-users"></i></span> Data Keluarga
         </button>
-        <button class="menu-item" data-tab="tab-dokumentasi">
-            <i class="fas fa-camera"></i> Kerja Bakti
-        </button>
         <button class="menu-item" data-tab="tab-tamu">
             <span class="icon-tamu"><i class="fas fa-user"></i></span> Tamu Wajib Lapor
         </button>
-        <button class="menu-item" data-tab="tab-komunikasi">
-            <i class="fas fa-bullhorn"></i> Informasi & Komunikasi
+        <button class="menu-item" data-tab="tab-informasi">
+            <i class="fas fa-info-circle"></i> Informasi &amp; Komunikasi
         </button>
         <button class="menu-item" data-tab="tab-iuran">
             <i class="fas fa-coins"></i> Iuran RT
@@ -1180,16 +1244,12 @@
             <div class="stat-info"><div class="angka" id="statKeluarga">0</div><div class="label">Keluarga</div></div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-camera"></i></div>
-            <div class="stat-info"><div class="angka" id="statDokumentasi">0</div><div class="label">Dokumentasi</div></div>
+            <div class="stat-icon"><i class="fas fa-info-circle"></i></div>
+            <div class="stat-info"><div class="angka" id="statInformasi">0</div><div class="label">Informasi</div></div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><span class="icon-tamu"><i class="fas fa-user"></i></span></div>
             <div class="stat-info"><div class="angka" id="statTamu">0</div><div class="label">Tamu Lapor</div></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-bullhorn"></i></div>
-            <div class="stat-info"><div class="angka" id="statKomunikasi">0</div><div class="label">Informasi</div></div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-coins"></i></div>
@@ -1213,18 +1273,6 @@
                 <tbody id="tableKeluarga"></tbody>
             </table>
         </div>
-    </div>
-
-    <!-- PANEL DOKUMENTASI -->
-    <div id="tab-dokumentasi" class="panel">
-        <div class="section-title">
-            <span><i class="fas fa-broom" style="color:#1f6b58;"></i> Dokumentasi Kerja Bakti</span>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <span class="loading-text" id="loadingDokumentasi"></span>
-                <button class="btn-tambah" data-modal="modalDokumentasi"><i class="fas fa-plus"></i> Tambah</button>
-            </div>
-        </div>
-        <div class="dokumentasi-grid" id="dokumentasiGrid"></div>
     </div>
 
     <!-- PANEL TAMU -->
@@ -1254,16 +1302,16 @@
         </div>
     </div>
 
-    <!-- PANEL INFORMASI & KOMUNIKASI -->
-    <div id="tab-komunikasi" class="panel">
+    <!-- PANEL INFORMASI -->
+    <div id="tab-informasi" class="panel">
         <div class="section-title">
-            <span><i class="fas fa-bullhorn" style="color:#b8860b;"></i> Informasi & Komunikasi</span>
+            <span><i class="fas fa-info-circle" style="color:#1f6b58;"></i> Informasi &amp; Komunikasi</span>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <span class="loading-text" id="loadingKomunikasi"></span>
-                <button class="btn-tambah" data-modal="modalKomunikasi"><i class="fas fa-plus"></i> Tambah</button>
+                <span class="loading-text" id="loadingInformasi"></span>
+                <button class="btn-tambah" data-modal="modalInformasi"><i class="fas fa-plus"></i> Tambah</button>
             </div>
         </div>
-        <div class="komunikasi-grid" id="komunikasiGrid"></div>
+        <div class="dokumentasi-grid" id="informasiGrid"></div>
     </div>
 
     <!-- PANEL IURAN -->
@@ -1275,7 +1323,32 @@
                 <button class="btn-tambah" data-modal="modalIuran"><i class="fas fa-plus"></i> Tambah</button>
             </div>
         </div>
-        <div class="table-responsive">
+
+        <!-- Filter & Export -->
+        <div class="filter-iuran">
+            <label>Periode:</label>
+            <select id="filterBulan">
+                <option value="all">Semua Bulan</option>
+                <option value="Januari">Januari</option>
+                <option value="Februari">Februari</option>
+                <option value="Maret">Maret</option>
+                <option value="April">April</option>
+                <option value="Mei">Mei</option>
+                <option value="Juni">Juni</option>
+                <option value="Juli">Juli</option>
+                <option value="Agustus">Agustus</option>
+                <option value="September">September</option>
+                <option value="Oktober">Oktober</option>
+                <option value="November">November</option>
+                <option value="Desember">Desember</option>
+            </select>
+            <input type="number" id="filterTahun" placeholder="Tahun" value="2026" style="width:90px;" />
+            <button class="btn-filter" id="btnFilterIuran"><i class="fas fa-filter"></i> Terapkan</button>
+            <button class="btn-export" id="btnExportPDF"><i class="fas fa-file-pdf"></i> PDF</button>
+            <button class="btn-export excel" id="btnExportExcel"><i class="fas fa-file-excel"></i> Excel</button>
+        </div>
+
+        <div class="table-responsive" id="iuranTableWrapper">
             <table>
                 <thead><tr><th>Keluarga</th><th>Bulan</th><th>Nominal</th><th>Status</th></tr></thead>
                 <tbody id="tableIuran"></tbody>
@@ -1309,7 +1382,7 @@
     </div>
 </main>
 
-<!-- ========== MODALS ========== -->
+<!-- ========== MODALS (sama seperti sebelumnya) ========== -->
 
 <!-- MODAL VIEW FILE -->
 <div class="modal-overlay" id="modalViewFile">
@@ -1515,45 +1588,30 @@
     </div>
 </div>
 
-<!-- MODAL DOKUMENTASI -->
-<div class="modal-overlay" id="modalDokumentasi">
+<!-- MODAL INFORMASI -->
+<div class="modal-overlay" id="modalInformasi">
     <div class="modal-box">
-        <h2><i class="fas fa-camera" style="color:#1c5f4e;"></i> Tambah Dokumentasi Kerja Bakti</h2>
-        <label>Foto Kegiatan</label>
-        <input type="file" id="inpDokFoto" accept="image/*" />
-        <div id="filePreviewDok" class="file-preview" style="display:none;">
+        <h2><i class="fas fa-info-circle" style="color:#1c5f4e;"></i> Tambah Informasi / Komunikasi</h2>
+        <label>Gambar / Lampiran</label>
+        <input type="file" id="inpInfoFoto" accept="image/*" />
+        <div id="filePreviewInfo" class="file-preview" style="display:none;">
             <i class="fas fa-image"></i>
-            <span id="fileNamePreviewDok"></span>
-            <button class="btn-hapus-file" id="btnHapusFileDok"><i class="fas fa-times"></i></button>
+            <span id="fileNamePreviewInfo"></span>
+            <button class="btn-hapus-file" id="btnHapusFileInfo"><i class="fas fa-times"></i></button>
         </div>
-        <div class="upload-progress" id="uploadProgressDok">
-            <div class="progress-bar"><div class="progress-fill" id="progressFillDok"></div></div>
-            <div class="progress-text" id="progressTextDok">0%</div>
+        <div class="upload-progress" id="uploadProgressInfo">
+            <div class="progress-bar"><div class="progress-fill" id="progressFillInfo"></div></div>
+            <div class="progress-text" id="progressTextInfo">0%</div>
         </div>
-        <label>Keterangan</label>
-        <textarea id="inpDokKeterangan" placeholder="Deskripsi kegiatan kerja bakti..."></textarea>
-        <label>Tanggal Kegiatan</label>
-        <input type="date" id="inpDokTanggal" />
-        <div class="modal-actions">
-            <button class="btn-batal" data-close="modalDokumentasi">Batal</button>
-            <button class="btn-simpan" id="simpanDokumentasi">Simpan</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL KOMUNIKASI -->
-<div class="modal-overlay" id="modalKomunikasi">
-    <div class="modal-box">
-        <h2><i class="fas fa-bullhorn" style="color:#b8860b;"></i> Tambah Informasi</h2>
-        <label>Judul</label>
-        <input id="inpKomJudul" placeholder="Judul informasi" />
-        <label>Konten</label>
-        <textarea id="inpKomKonten" placeholder="Isi informasi atau pengumuman..."></textarea>
+        <label>Judul / Topik</label>
+        <input id="inpInfoJudul" placeholder="Judul informasi" />
+        <label>Keterangan / Isi</label>
+        <textarea id="inpInfoKeterangan" placeholder="Deskripsi atau isi informasi..."></textarea>
         <label>Tanggal</label>
-        <input type="date" id="inpKomTanggal" />
+        <input type="date" id="inpInfoTanggal" />
         <div class="modal-actions">
-            <button class="btn-batal" data-close="modalKomunikasi">Batal</button>
-            <button class="btn-simpan" id="simpanKomunikasi">Simpan</button>
+            <button class="btn-batal" data-close="modalInformasi">Batal</button>
+            <button class="btn-simpan" id="simpanInformasi">Simpan</button>
         </div>
     </div>
 </div>
@@ -1734,9 +1792,8 @@
     // DATA REFERENCES
     // ======================================================================
     const keluargaRef = db.collection('keluarga');
-    const dokumentasiRef = db.collection('dokumentasi');
+    const informasiRef = db.collection('informasi');
     const tamuRef = db.collection('tamu');
-    const komunikasiRef = db.collection('komunikasi');
     const iuranRef = db.collection('iuran');
     const settingsRef = db.collection('settings').doc('pengaturan');
 
@@ -1744,10 +1801,10 @@
     // GLOBAL STATE
     // ======================================================================
     let dataKeluarga = [];
-    let dokumentasi = [];
+    let informasiData = [];
     let tamuWajibLapor = [];
-    let komunikasi = [];
-    let iuranRT = [];
+    let iuranRT = []; // data mentah dari Firebase
+    let filteredIuran = []; // data setelah filter
     let settingsData = {
         namaRT: 'RT 08 · Kelurahan Makmur',
         ketuaRT: '',
@@ -1756,6 +1813,7 @@
     };
     let editTamuIndex = -1;
     let anggotaCount = 1;
+    let currentIuranFilter = { bulan: 'all', tahun: '2026' };
 
     // ======================================================================
     // LOADING INDICATORS
@@ -1780,16 +1838,6 @@
             });
             setLoading('loadingKeluarga', '');
 
-            setLoading('loadingDokumentasi', '<span class="loading-spinner"></span> Memuat...');
-            const dokSnapshot = await dokumentasiRef.orderBy('tanggal', 'desc').get();
-            dokumentasi = [];
-            dokSnapshot.forEach(doc => {
-                const data = doc.data();
-                data.id = doc.id;
-                dokumentasi.push(data);
-            });
-            setLoading('loadingDokumentasi', '');
-
             setLoading('loadingTamu', '<span class="loading-spinner"></span> Memuat...');
             const tamuSnapshot = await tamuRef.orderBy('no').get();
             tamuWajibLapor = [];
@@ -1800,15 +1848,15 @@
             });
             setLoading('loadingTamu', '');
 
-            setLoading('loadingKomunikasi', '<span class="loading-spinner"></span> Memuat...');
-            const komSnapshot = await komunikasiRef.orderBy('tanggal', 'desc').get();
-            komunikasi = [];
-            komSnapshot.forEach(doc => {
+            setLoading('loadingInformasi', '<span class="loading-spinner"></span> Memuat...');
+            const infoSnapshot = await informasiRef.orderBy('tanggal', 'desc').get();
+            informasiData = [];
+            infoSnapshot.forEach(doc => {
                 const data = doc.data();
                 data.id = doc.id;
-                komunikasi.push(data);
+                informasiData.push(data);
             });
-            setLoading('loadingKomunikasi', '');
+            setLoading('loadingInformasi', '');
 
             setLoading('loadingIuran', '<span class="loading-spinner"></span> Memuat...');
             const iuranSnapshot = await iuranRef.orderBy('bulan', 'desc').get();
@@ -1827,14 +1875,15 @@
             }
             setLoading('loadingSettings', '');
 
+            // Apply filter after data loaded
+            applyIuranFilter();
             renderAll();
             updateSyncStatus(true);
         } catch (error) {
             console.error('Error loading data:', error);
             setLoading('loadingKeluarga', '⚠️ Gagal memuat data');
-            setLoading('loadingDokumentasi', '⚠️ Gagal memuat data');
             setLoading('loadingTamu', '⚠️ Gagal memuat data');
-            setLoading('loadingKomunikasi', '⚠️ Gagal memuat data');
+            setLoading('loadingInformasi', '⚠️ Gagal memuat data');
             setLoading('loadingIuran', '⚠️ Gagal memuat data');
             setLoading('loadingSettings', '⚠️ Gagal memuat data');
             updateSyncStatus(false);
@@ -1926,6 +1975,28 @@
         } else {
             btnTambah.style.display = 'flex';
         }
+    }
+
+    // ======================================================================
+    // FILTER IURAN
+    // ======================================================================
+    function applyIuranFilter() {
+        const bulan = document.getElementById('filterBulan').value;
+        const tahun = document.getElementById('filterTahun').value.trim() || '2026';
+        currentIuranFilter = { bulan, tahun };
+        
+        filteredIuran = iuranRT.filter(item => {
+            if (!item.bulan) return false;
+            // Ekstrak bulan dan tahun dari string "Januari 2026" atau "April 2026"
+            const parts = item.bulan.split(' ');
+            if (parts.length !== 2) return true; // jika format tidak sesuai, tampilkan semua
+            const itemBulan = parts[0];
+            const itemTahun = parts[1];
+            if (bulan !== 'all' && itemBulan !== bulan) return false;
+            if (itemTahun !== tahun) return false;
+            return true;
+        });
+        renderIuran();
     }
 
     // ======================================================================
@@ -2106,18 +2177,18 @@
         });
     }
 
-    function renderDokumentasi() {
-        const grid = document.getElementById('dokumentasiGrid');
-        if (dokumentasi.length === 0) {
-            grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:#6a7e94;background:white;border-radius:20px;border:1px solid #e9edf4;">Belum ada dokumentasi kerja bakti. Klik "Tambah" untuk menambahkan.</div>`;
+    function renderInformasi() {
+        const grid = document.getElementById('informasiGrid');
+        if (informasiData.length === 0) {
+            grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:#6a7e94;background:white;border-radius:20px;border:1px solid #e9edf4;">Belum ada informasi. Klik "Tambah" untuk menambahkan.</div>`;
         } else {
-            grid.innerHTML = dokumentasi.map((d, index) => {
+            grid.innerHTML = informasiData.map((d, index) => {
                 const hasFoto = d.fotoUrl;
                 let fotoHtml = '';
                 if (hasFoto) {
                     fotoHtml = `<img src="${d.fotoUrl}" alt="${d.judul}" class="dok-image" />`;
                 } else {
-                    fotoHtml = `<div class="dok-image-placeholder"><i class="fas fa-camera"></i></div>`;
+                    fotoHtml = `<div class="dok-image-placeholder"><i class="fas fa-info-circle"></i></div>`;
                 }
                 
                 let downloadBtn = '';
@@ -2129,26 +2200,26 @@
                     <div class="dok-item">
                         ${fotoHtml}
                         <div class="dok-body">
-                            <div class="dok-title">${d.judul || 'Kegiatan'}</div>
+                            <div class="dok-title">${d.judul || 'Informasi'}</div>
                             <div class="dok-date"><i class="far fa-calendar-alt"></i> ${d.tanggal || '-'}</div>
                             <div class="dok-description">${d.keterangan || 'Tidak ada keterangan'}</div>
                             <div class="dok-actions">
-                                <button class="btn-upload" data-dok-index="${index}"><i class="fas fa-upload"></i> Upload Foto</button>
+                                <button class="btn-upload" data-info-index="${index}"><i class="fas fa-upload"></i> Upload Gambar</button>
                                 ${downloadBtn}
-                                <button class="btn-hapus-dok" data-dok-index="${index}"><i class="fas fa-trash"></i> Hapus</button>
+                                <button class="btn-hapus-dok" data-info-index="${index}"><i class="fas fa-trash"></i> Hapus</button>
                             </div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
-        document.getElementById('statDokumentasi').textContent = dokumentasi.length;
+        document.getElementById('statInformasi').textContent = informasiData.length;
 
-        document.querySelectorAll('.btn-upload[data-dok-index]').forEach(btn => {
+        document.querySelectorAll('.btn-upload[data-info-index]').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                const idx = parseInt(this.dataset.dokIndex);
-                openUploadDokumentasi(idx);
+                const idx = parseInt(this.dataset.infoIndex);
+                openUploadInformasi(idx);
             });
         });
 
@@ -2161,54 +2232,14 @@
             });
         });
 
-        document.querySelectorAll('.btn-hapus-dok').forEach(btn => {
+        document.querySelectorAll('.btn-hapus-dok[data-info-index]').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                const idx = parseInt(this.dataset.dokIndex);
-                if (confirm('Hapus dokumentasi ini?')) {
-                    const doc = dokumentasi[idx];
-                    if (doc.id) {
-                        dokumentasiRef.doc(doc.id).delete().then(() => {
-                            loadAllData();
-                        }).catch(err => {
-                            alert('Gagal menghapus: ' + err.message);
-                        });
-                    }
-                }
-            });
-        });
-    }
-
-    function renderKomunikasi() {
-        const grid = document.getElementById('komunikasiGrid');
-        if (komunikasi.length === 0) {
-            grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:#6a7e94;background:white;border-radius:20px;border:1px solid #e9edf4;">Belum ada informasi. Klik "Tambah" untuk menambahkan.</div>`;
-        } else {
-            grid.innerHTML = komunikasi.map((kom, index) => {
-                return `
-                    <div class="kom-item">
-                        <div class="kom-body">
-                            <div class="kom-title">${kom.judul || 'Informasi'}</div>
-                            <div class="kom-date"><i class="far fa-calendar-alt"></i> ${kom.tanggal || '-'}</div>
-                            <div class="kom-description">${kom.konten || 'Tidak ada konten'}</div>
-                            <div class="kom-actions">
-                                <button class="btn-hapus-kom" data-kom-index="${index}"><i class="fas fa-trash"></i> Hapus</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-        document.getElementById('statKomunikasi').textContent = komunikasi.length;
-
-        document.querySelectorAll('.btn-hapus-kom').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const idx = parseInt(this.dataset.komIndex);
+                const idx = parseInt(this.dataset.infoIndex);
                 if (confirm('Hapus informasi ini?')) {
-                    const kom = komunikasi[idx];
-                    if (kom.id) {
-                        komunikasiRef.doc(kom.id).delete().then(() => {
+                    const doc = informasiData[idx];
+                    if (doc.id) {
+                        informasiRef.doc(doc.id).delete().then(() => {
                             loadAllData();
                         }).catch(err => {
                             alert('Gagal menghapus: ' + err.message);
@@ -2221,18 +2252,21 @@
 
     function renderIuran() {
         const tbody = document.getElementById('tableIuran');
-        if (iuranRT.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:#6a7e94;">Belum ada data iuran. Klik "Tambah" untuk menambahkan.</td></tr>`;
-        } else {
-            let total = 0;
-            tbody.innerHTML = iuranRT.map(i => {
-                const lunas = i.status === 'Lunas';
-                if (lunas) total += (i.nominal || 0);
-                return `<tr><td><strong>${i.keluarga || '-'}</strong></td><td>${i.bulan || '-'}</td><td>Rp ${(i.nominal || 0).toLocaleString('id-ID')}</td><td><span class="tag ${lunas ? 'tag-warga' : 'tag-tamu'}">${i.status || 'Belum'}</span></td></tr>`;
-            }).join('');
-            document.getElementById('statIuran').innerHTML = `Rp ${total.toLocaleString('id-ID')}`;
-            document.getElementById('totalIuranText').textContent = total.toLocaleString('id-ID');
+        const data = filteredIuran.length > 0 ? filteredIuran : iuranRT;
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:#6a7e94;">Tidak ada data iuran untuk periode ini.</td></tr>`;
+            document.getElementById('statIuran').innerHTML = 'Rp 0';
+            document.getElementById('totalIuranText').textContent = '0';
+            return;
         }
+        let total = 0;
+        tbody.innerHTML = data.map(i => {
+            const lunas = i.status === 'Lunas';
+            if (lunas) total += (i.nominal || 0);
+            return `<tr><td><strong>${i.keluarga || '-'}</strong></td><td>${i.bulan || '-'}</td><td>Rp ${(i.nominal || 0).toLocaleString('id-ID')}</td><td><span class="tag ${lunas ? 'tag-warga' : 'tag-tamu'}">${i.status || 'Belum'}</span></td></tr>`;
+        }).join('');
+        document.getElementById('statIuran').innerHTML = `Rp ${total.toLocaleString('id-ID')}`;
+        document.getElementById('totalIuranText').textContent = total.toLocaleString('id-ID');
     }
 
     function renderSettings() {
@@ -2248,8 +2282,7 @@
     function renderAll() {
         renderKeluarga();
         renderTamu();
-        renderDokumentasi();
-        renderKomunikasi();
+        renderInformasi();
         renderIuran();
         renderSettings();
     }
@@ -3138,30 +3171,31 @@
     });
 
     // ======================================================================
-    // SIMPAN DOKUMENTASI with GoFile
+    // SIMPAN INFORMASI dengan GoFile
     // ======================================================================
-    let uploadDokIndex = -1;
-    let selectedFileDok = null;
+    let uploadInfoIndex = -1;
+    let selectedFileInfo = null;
 
-    function openUploadDokumentasi(index) {
-        uploadDokIndex = index;
-        const d = dokumentasi[index];
-        document.getElementById('inpDokFoto').value = '';
-        document.getElementById('filePreviewDok').style.display = 'none';
-        document.getElementById('uploadProgressDok').style.display = 'none';
-        selectedFileDok = null;
+    function openUploadInformasi(index) {
+        uploadInfoIndex = index;
+        const d = informasiData[index];
+        document.getElementById('inpInfoFoto').value = '';
+        document.getElementById('filePreviewInfo').style.display = 'none';
+        document.getElementById('uploadProgressInfo').style.display = 'none';
+        selectedFileInfo = null;
         
         if (d.fotoUrl) {
-            document.getElementById('filePreviewDok').style.display = 'flex';
-            document.getElementById('fileNamePreviewDok').textContent = d.fileName || 'Foto';
-            selectedFileDok = { url: d.fotoUrl, name: d.fileName };
+            document.getElementById('filePreviewInfo').style.display = 'flex';
+            document.getElementById('fileNamePreviewInfo').textContent = d.fileName || 'Gambar';
+            selectedFileInfo = { url: d.fotoUrl, name: d.fileName };
         }
-        document.getElementById('inpDokKeterangan').value = d.keterangan || '';
-        document.getElementById('inpDokTanggal').value = d.tanggal ? d.tanggal.replace(/\s/g, '-') : '';
-        openModal('modalDokumentasi');
+        document.getElementById('inpInfoJudul').value = d.judul || '';
+        document.getElementById('inpInfoKeterangan').value = d.keterangan || '';
+        document.getElementById('inpInfoTanggal').value = d.tanggal ? d.tanggal.replace(/\s/g, '-') : '';
+        openModal('modalInformasi');
     }
 
-    document.getElementById('inpDokFoto').addEventListener('change', function(e) {
+    document.getElementById('inpInfoFoto').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
@@ -3175,26 +3209,26 @@
             this.value = '';
             return;
         }
-        document.getElementById('filePreviewDok').style.display = 'flex';
-        document.getElementById('fileNamePreviewDok').textContent = file.name;
-        document.getElementById('uploadProgressDok').style.display = 'none';
-        selectedFileDok = file;
+        document.getElementById('filePreviewInfo').style.display = 'flex';
+        document.getElementById('fileNamePreviewInfo').textContent = file.name;
+        document.getElementById('uploadProgressInfo').style.display = 'none';
+        selectedFileInfo = file;
     });
 
-    document.getElementById('btnHapusFileDok').addEventListener('click', function() {
-        document.getElementById('inpDokFoto').value = '';
-        document.getElementById('filePreviewDok').style.display = 'none';
-        document.getElementById('uploadProgressDok').style.display = 'none';
-        selectedFileDok = null;
+    document.getElementById('btnHapusFileInfo').addEventListener('click', function() {
+        document.getElementById('inpInfoFoto').value = '';
+        document.getElementById('filePreviewInfo').style.display = 'none';
+        document.getElementById('uploadProgressInfo').style.display = 'none';
+        selectedFileInfo = null;
     });
 
-    document.getElementById('simpanDokumentasi').addEventListener('click', async function() {
-        const judul = document.getElementById('inpDokKeterangan').value.trim().slice(0, 50) || 'Kegiatan Kerja Bakti';
-        const keterangan = document.getElementById('inpDokKeterangan').value.trim();
-        const tanggalRaw = document.getElementById('inpDokTanggal').value;
+    document.getElementById('simpanInformasi').addEventListener('click', async function() {
+        const judul = document.getElementById('inpInfoJudul').value.trim() || 'Informasi';
+        const keterangan = document.getElementById('inpInfoKeterangan').value.trim();
+        const tanggalRaw = document.getElementById('inpInfoTanggal').value;
         
         if (!tanggalRaw) {
-            alert('Tanggal kegiatan harus diisi');
+            alert('Tanggal harus diisi');
             return;
         }
         
@@ -3207,31 +3241,31 @@
         let fileSize = 0;
         let fileTime = null;
         
-        if (selectedFileDok && selectedFileDok instanceof File) {
+        if (selectedFileInfo && selectedFileInfo instanceof File) {
             try {
-                const progressDiv = document.getElementById('uploadProgressDok');
+                const progressDiv = document.getElementById('uploadProgressInfo');
                 progressDiv.style.display = 'block';
-                const progressFill = document.getElementById('progressFillDok');
-                const progressText = document.getElementById('progressTextDok');
+                const progressFill = document.getElementById('progressFillInfo');
+                const progressText = document.getElementById('progressTextInfo');
                 
-                const result = await uploadToGoFile(selectedFileDok, (percent) => {
+                const result = await uploadToGoFile(selectedFileInfo, (percent) => {
                     progressFill.style.width = percent + '%';
                     progressText.textContent = percent + '%';
                 });
                 
                 fotoUrl = result.url;
                 fileName = result.fileName;
-                fileSize = selectedFileDok.size;
+                fileSize = selectedFileInfo.size;
                 fileTime = new Date().toISOString();
                 progressDiv.style.display = 'none';
             } catch (err) {
-                alert('Gagal upload foto ke GoFile: ' + err.message);
-                document.getElementById('uploadProgressDok').style.display = 'none';
+                alert('Gagal upload gambar ke GoFile: ' + err.message);
+                document.getElementById('uploadProgressInfo').style.display = 'none';
                 return;
             }
-        } else if (selectedFileDok && selectedFileDok.url) {
-            fotoUrl = selectedFileDok.url;
-            fileName = selectedFileDok.name;
+        } else if (selectedFileInfo && selectedFileInfo.url) {
+            fotoUrl = selectedFileInfo.url;
+            fileName = selectedFileInfo.name;
         }
 
         const data = {
@@ -3240,74 +3274,39 @@
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        if (uploadDokIndex !== -1) {
-            const docId = dokumentasi[uploadDokIndex].id;
-            dokumentasiRef.doc(docId).update(data).then(() => {
+        if (uploadInfoIndex !== -1) {
+            const docId = informasiData[uploadInfoIndex].id;
+            informasiRef.doc(docId).update(data).then(() => {
                 loadAllData();
-                closeModal('modalDokumentasi');
-                alert('Dokumentasi berhasil diupdate!');
-                uploadDokIndex = -1;
-                selectedFileDok = null;
+                closeModal('modalInformasi');
+                alert('Informasi berhasil diupdate!');
+                uploadInfoIndex = -1;
+                selectedFileInfo = null;
             }).catch(err => {
                 alert('Gagal mengupdate: ' + err.message);
             });
         } else {
-            dokumentasiRef.add(data).then(() => {
+            informasiRef.add(data).then(() => {
                 loadAllData();
-                closeModal('modalDokumentasi');
-                alert('Dokumentasi berhasil ditambahkan!');
-                selectedFileDok = null;
+                closeModal('modalInformasi');
+                alert('Informasi berhasil ditambahkan!');
+                selectedFileInfo = null;
             }).catch(err => {
                 alert('Gagal menambahkan: ' + err.message);
             });
         }
     });
 
-    document.querySelector('.btn-tambah[data-modal="modalDokumentasi"]').addEventListener('click', function() {
-        uploadDokIndex = -1;
-        selectedFileDok = null;
-        document.getElementById('inpDokFoto').value = '';
-        document.getElementById('filePreviewDok').style.display = 'none';
-        document.getElementById('uploadProgressDok').style.display = 'none';
-        document.getElementById('inpDokKeterangan').value = '';
-        document.getElementById('inpDokTanggal').value = '';
-        openModal('modalDokumentasi');
-    });
-
-    // ======================================================================
-    // SIMPAN KOMUNIKASI
-    // ======================================================================
-    document.getElementById('simpanKomunikasi').addEventListener('click', function() {
-        const judul = document.getElementById('inpKomJudul').value.trim();
-        const konten = document.getElementById('inpKomKonten').value.trim();
-        const tanggal = document.getElementById('inpKomTanggal').value;
-        
-        if (!judul || !konten || !tanggal) {
-            alert('Semua field harus diisi!');
-            return;
-        }
-        
-        const data = {
-            judul,
-            konten,
-            tanggal,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        
-        komunikasiRef.add(data).then(() => {
-            loadAllData();
-            closeModal('modalKomunikasi');
-            alert('Informasi berhasil ditambahkan!');
-        }).catch(err => {
-            alert('Gagal menambahkan: ' + err.message);
-        });
-    });
-
-    document.querySelector('.btn-tambah[data-modal="modalKomunikasi"]').addEventListener('click', function() {
-        document.getElementById('inpKomJudul').value = '';
-        document.getElementById('inpKomKonten').value = '';
-        document.getElementById('inpKomTanggal').value = '';
-        openModal('modalKomunikasi');
+    document.querySelector('.btn-tambah[data-modal="modalInformasi"]').addEventListener('click', function() {
+        uploadInfoIndex = -1;
+        selectedFileInfo = null;
+        document.getElementById('inpInfoFoto').value = '';
+        document.getElementById('filePreviewInfo').style.display = 'none';
+        document.getElementById('uploadProgressInfo').style.display = 'none';
+        document.getElementById('inpInfoJudul').value = '';
+        document.getElementById('inpInfoKeterangan').value = '';
+        document.getElementById('inpInfoTanggal').value = '';
+        openModal('modalInformasi');
     });
 
     // ======================================================================
@@ -3561,6 +3560,144 @@
     });
 
     // ======================================================================
+    // EXPORT PDF & EXCEL
+    // ======================================================================
+    document.getElementById('btnExportPDF').addEventListener('click', function() {
+        const data = filteredIuran.length > 0 ? filteredIuran : iuranRT;
+        if (data.length === 0) {
+            alert('Tidak ada data iuran untuk diekspor.');
+            return;
+        }
+        
+        // Buat container untuk PDF
+        const pdfContainer = document.createElement('div');
+        pdfContainer.style.cssText = 'padding:20px;background:white;font-family:"Segoe UI",Arial,sans-serif;width:100%;';
+        
+        let rows = '';
+        let total = 0;
+        data.forEach((item, index) => {
+            const lunas = item.status === 'Lunas';
+            if (lunas) total += (item.nominal || 0);
+            rows += `
+                <tr>
+                    <td style="padding:6px 10px;border-bottom:1px solid #e5ecf5;">${index + 1}</td>
+                    <td style="padding:6px 10px;border-bottom:1px solid #e5ecf5;">${item.keluarga || '-'}</td>
+                    <td style="padding:6px 10px;border-bottom:1px solid #e5ecf5;">${item.bulan || '-'}</td>
+                    <td style="padding:6px 10px;border-bottom:1px solid #e5ecf5;text-align:right;">Rp ${(item.nominal || 0).toLocaleString('id-ID')}</td>
+                    <td style="padding:6px 10px;border-bottom:1px solid #e5ecf5;">${item.status || 'Belum'}</td>
+                </tr>
+            `;
+        });
+        
+        const periode = currentIuranFilter.bulan !== 'all' ? 
+            `Periode: ${currentIuranFilter.bulan} ${currentIuranFilter.tahun}` : 
+            `Periode: Semua (${currentIuranFilter.tahun})`;
+        
+        pdfContainer.innerHTML = `
+            <h2 style="color:#0b2b3d;border-bottom:2px solid #1c5f4e;padding-bottom:10px;margin-bottom:15px;">
+                <i class="fas fa-coins" style="color:#1f4780;"></i> Laporan Iuran RT
+            </h2>
+            <div style="display:flex;justify-content:space-between;margin-bottom:15px;font-size:14px;color:#1d3b4f;">
+                <span><strong>${settingsData.namaRT || 'RT Kita'}</strong></span>
+                <span>${periode}</span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #dde3ed;border-radius:6px;overflow:hidden;">
+                <thead>
+                    <tr style="background:#e9f0f5;">
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #c8d4e3;">No</th>
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #c8d4e3;">Keluarga</th>
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #c8d4e3;">Bulan</th>
+                        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #c8d4e3;">Nominal</th>
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #c8d4e3;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+                <tfoot>
+                    <tr style="background:#f8faff;font-weight:600;">
+                        <td colspan="3" style="padding:8px 10px;text-align:right;">Total Terkumpul</td>
+                        <td style="padding:8px 10px;text-align:right;">Rp ${total.toLocaleString('id-ID')}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div style="margin-top:15px;font-size:10px;color:#6a7e94;text-align:right;">Dicetak dari RT Kita pada ${new Date().toLocaleDateString('id-ID')}</div>
+        `;
+
+        document.body.appendChild(pdfContainer);
+        html2pdf().set({
+            margin: 10,
+            filename: `Laporan_Iuran_RT_${new Date().toISOString().slice(0,10)}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }).from(pdfContainer).save().then(() => {
+            document.body.removeChild(pdfContainer);
+        }).catch(() => {
+            document.body.removeChild(pdfContainer);
+            alert('Gagal generate PDF. Silakan coba lagi.');
+        });
+    });
+
+    document.getElementById('btnExportExcel').addEventListener('click', function() {
+        const data = filteredIuran.length > 0 ? filteredIuran : iuranRT;
+        if (data.length === 0) {
+            alert('Tidak ada data iuran untuk diekspor.');
+            return;
+        }
+
+        // Siapkan data untuk Excel
+        const excelData = data.map((item, index) => ({
+            'No': index + 1,
+            'Keluarga': item.keluarga || '-',
+            'Bulan': item.bulan || '-',
+            'Nominal': item.nominal || 0,
+            'Status': item.status || 'Belum'
+        }));
+
+        // Tambahkan baris total
+        const total = data.reduce((sum, item) => sum + (item.status === 'Lunas' ? (item.nominal || 0) : 0), 0);
+        excelData.push({
+            'No': '',
+            'Keluarga': 'TOTAL TERKUMPUL',
+            'Bulan': '',
+            'Nominal': total,
+            'Status': ''
+        });
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        
+        // Atur lebar kolom
+        ws['!cols'] = [
+            { wch: 6 },
+            { wch: 25 },
+            { wch: 18 },
+            { wch: 18 },
+            { wch: 12 }
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Iuran RT');
+        const filename = `Laporan_Iuran_RT_${new Date().toISOString().slice(0,10)}.xlsx`;
+        XLSX.writeFile(wb, filename);
+    });
+
+    // ======================================================================
+    // FILTER IURAN EVENTS
+    // ======================================================================
+    document.getElementById('btnFilterIuran').addEventListener('click', function() {
+        applyIuranFilter();
+    });
+
+    document.getElementById('filterBulan').addEventListener('change', function() {
+        // Otomatis terapkan filter saat bulan berubah
+        applyIuranFilter();
+    });
+
+    document.getElementById('filterTahun').addEventListener('change', function() {
+        applyIuranFilter();
+    });
+
+    // ======================================================================
     // MODAL UTILITY
     // ======================================================================
     function openModal(id) {
@@ -3570,12 +3707,12 @@
         document.getElementById(id).classList.remove('show');
         if (id === 'modalKeluarga') resetModalKeluarga();
         if (id === 'modalTamu') resetModalTamu();
-        if (id === 'modalDokumentasi') {
-            document.getElementById('inpDokFoto').value = '';
-            document.getElementById('filePreviewDok').style.display = 'none';
-            document.getElementById('uploadProgressDok').style.display = 'none';
-            selectedFileDok = null;
-            uploadDokIndex = -1;
+        if (id === 'modalInformasi') {
+            document.getElementById('inpInfoFoto').value = '';
+            document.getElementById('filePreviewInfo').style.display = 'none';
+            document.getElementById('uploadProgressInfo').style.display = 'none';
+            selectedFileInfo = null;
+            uploadInfoIndex = -1;
         }
         if (id === 'modalUpload') {
             document.getElementById('inpFileUpload').value = '';
@@ -3592,11 +3729,6 @@
         if (id === 'modalViewFile') {
             document.getElementById('viewFileContent').innerHTML = '<p style="color:#6a7e94;text-align:center;">Tidak ada file untuk ditampilkan</p>';
         }
-        if (id === 'modalKomunikasi') {
-            document.getElementById('inpKomJudul').value = '';
-            document.getElementById('inpKomKonten').value = '';
-            document.getElementById('inpKomTanggal').value = '';
-        }
     }
 
     document.querySelectorAll('.modal-overlay').forEach(el => {
@@ -3605,12 +3737,12 @@
                 this.classList.remove('show');
                 if (this.id === 'modalKeluarga') resetModalKeluarga();
                 if (this.id === 'modalTamu') resetModalTamu();
-                if (this.id === 'modalDokumentasi') {
-                    document.getElementById('inpDokFoto').value = '';
-                    document.getElementById('filePreviewDok').style.display = 'none';
-                    document.getElementById('uploadProgressDok').style.display = 'none';
-                    selectedFileDok = null;
-                    uploadDokIndex = -1;
+                if (this.id === 'modalInformasi') {
+                    document.getElementById('inpInfoFoto').value = '';
+                    document.getElementById('filePreviewInfo').style.display = 'none';
+                    document.getElementById('uploadProgressInfo').style.display = 'none';
+                    selectedFileInfo = null;
+                    uploadInfoIndex = -1;
                 }
                 if (this.id === 'modalUpload') {
                     document.getElementById('inpFileUpload').value = '';
@@ -3627,11 +3759,6 @@
                 if (this.id === 'modalViewFile') {
                     document.getElementById('viewFileContent').innerHTML = '<p style="color:#6a7e94;text-align:center;">Tidak ada file untuk ditampilkan</p>';
                 }
-                if (this.id === 'modalKomunikasi') {
-                    document.getElementById('inpKomJudul').value = '';
-                    document.getElementById('inpKomKonten').value = '';
-                    document.getElementById('inpKomTanggal').value = '';
-                }
             }
         });
     });
@@ -3644,11 +3771,6 @@
         btn.addEventListener('click', function() {
             if (this.dataset.modal === 'modalKeluarga') resetModalKeluarga();
             if (this.dataset.modal === 'modalTamu') resetModalTamu();
-            if (this.dataset.modal === 'modalKomunikasi') {
-                document.getElementById('inpKomJudul').value = '';
-                document.getElementById('inpKomKonten').value = '';
-                document.getElementById('inpKomTanggal').value = '';
-            }
             openModal(this.dataset.modal);
         });
     });
@@ -3666,9 +3788,8 @@
     // ======================================================================
     const pageTitles = {
         'tab-keluarga': 'Data Keluarga',
-        'tab-dokumentasi': 'Kerja Bakti',
         'tab-tamu': 'Tamu Wajib Lapor',
-        'tab-komunikasi': 'Informasi & Komunikasi',
+        'tab-informasi': 'Informasi & Komunikasi',
         'tab-iuran': 'Iuran RT',
         'tab-pengaturan': 'Pengaturan RT'
     };
@@ -3688,7 +3809,12 @@
             } else if (iconTamu) {
                 iconHtml = `<span class="icon-tamu icon-tamu-lg"><i class="fas fa-user"></i></span>`;
             } else {
-                iconHtml = `<i class="${this.querySelector('i').className}"></i>`;
+                const iconElem = this.querySelector('i');
+                if (iconElem) {
+                    iconHtml = `<i class="${iconElem.className}"></i>`;
+                } else {
+                    iconHtml = `<i class="fas fa-circle"></i>`;
+                }
             }
             document.getElementById('pageTitle').innerHTML = `${iconHtml} ${pageTitles[tabId] || tabId}`;
             document.getElementById('sidebar').classList.remove('open');
@@ -3715,15 +3841,17 @@
         console.warn('⚠️ GoFile API token belum diatur. Silakan ganti GOFILE_API_TOKEN dengan token Anda.');
     }
 
+    // Set default tahun
+    document.getElementById('filterTahun').value = new Date().getFullYear();
+
     // Initialize anggota counter
     updateAnggotaCounter();
 
     loadAllData();
 
     keluargaRef.onSnapshot(() => { loadAllData(); });
-    dokumentasiRef.onSnapshot(() => { loadAllData(); });
     tamuRef.onSnapshot(() => { loadAllData(); });
-    komunikasiRef.onSnapshot(() => { loadAllData(); });
+    informasiRef.onSnapshot(() => { loadAllData(); });
     iuranRef.onSnapshot(() => { loadAllData(); });
     settingsRef.onSnapshot(() => { loadAllData(); });
 </script>
