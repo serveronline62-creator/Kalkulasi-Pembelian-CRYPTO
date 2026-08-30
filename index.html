@@ -338,6 +338,7 @@
         .tag-warga { background: #e1f0ea; color: #14634b; }
         .tag-tamu { background: #fff1e0; color: #a1581c; }
         .tag-iuran { background: #e3eaf9; color: #1f4780; }
+        .tag-info { background: #fef3d7; color: #8a6d1c; }
         .no-urut {
             text-align: center;
             font-weight: 600;
@@ -439,13 +440,13 @@
             text-decoration: underline;
         }
 
-        .dokumentasi-grid {
+        .dokumentasi-grid, .komunikasi-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
             margin-top: 0.5rem;
         }
-        .dok-item {
+        .dok-item, .kom-item {
             background: white;
             border-radius: 20px;
             border: 1px solid #e9edf4;
@@ -453,7 +454,7 @@
             overflow: hidden;
             transition: 0.2s;
         }
-        .dok-item:hover {
+        .dok-item:hover, .kom-item:hover {
             box-shadow: 0 8px 25px rgba(0,0,0,0.1);
             transform: translateY(-3px);
         }
@@ -473,32 +474,32 @@
             color: #2a7f6e;
             font-size: 3rem;
         }
-        .dok-item .dok-body {
+        .dok-item .dok-body, .kom-item .kom-body {
             padding: 1rem 1.2rem 1.2rem;
         }
-        .dok-item .dok-title {
+        .dok-item .dok-title, .kom-item .kom-title {
             font-weight: 600;
             color: #0b2b3d;
             font-size: 1rem;
             margin-bottom: 0.3rem;
         }
-        .dok-item .dok-date {
+        .dok-item .dok-date, .kom-item .kom-date {
             font-size: 0.8rem;
             color: #4a6a7a;
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        .dok-item .dok-date i {
+        .dok-item .dok-date i, .kom-item .kom-date i {
             color: #2a7f6e;
         }
-        .dok-item .dok-description {
+        .dok-item .dok-description, .kom-item .kom-description {
             font-size: 0.85rem;
             color: #2a445a;
             margin-top: 0.5rem;
             line-height: 1.5;
         }
-        .dok-item .dok-actions {
+        .dok-item .dok-actions, .kom-item .kom-actions {
             margin-top: 0.8rem;
             padding-top: 0.8rem;
             border-top: 1px solid #e9edf4;
@@ -506,7 +507,7 @@
             gap: 6px;
             flex-wrap: wrap;
         }
-        .btn-hapus-dok {
+        .btn-hapus-dok, .btn-hapus-kom {
             background: #e74c3c;
             border: none;
             color: white;
@@ -520,7 +521,7 @@
             align-items: center;
             gap: 4px;
         }
-        .btn-hapus-dok:hover {
+        .btn-hapus-dok:hover, .btn-hapus-kom:hover {
             background: #c0392b;
         }
 
@@ -532,7 +533,7 @@
 
         .settings-grid {
             display: grid;
-            grid-template-columns: 1fr;  /* hanya satu kartu */
+            grid-template-columns: 1fr;
             gap: 1.5rem;
         }
         .settings-card {
@@ -1021,7 +1022,7 @@
             .kk-table, .tamu-detail-table { font-size: 0.65rem; min-width: 700px; }
             .stats-grid { grid-template-columns: 1fr 1fr; }
             .settings-grid { grid-template-columns: 1fr; }
-            .dokumentasi-grid { grid-template-columns: 1fr; }
+            .dokumentasi-grid, .komunikasi-grid { grid-template-columns: 1fr; }
             .modal-file-view { max-width: 100% !important; }
             .modal-file-view .file-display img { max-height: 300px; }
             .modal-file-view .file-display .pdf-view { height: 300px; }
@@ -1143,6 +1144,9 @@
         <button class="menu-item" data-tab="tab-tamu">
             <span class="icon-tamu"><i class="fas fa-user"></i></span> Tamu Wajib Lapor
         </button>
+        <button class="menu-item" data-tab="tab-komunikasi">
+            <i class="fas fa-bullhorn"></i> Informasi & Komunikasi
+        </button>
         <button class="menu-item" data-tab="tab-iuran">
             <i class="fas fa-coins"></i> Iuran RT
         </button>
@@ -1182,6 +1186,10 @@
         <div class="stat-card">
             <div class="stat-icon"><span class="icon-tamu"><i class="fas fa-user"></i></span></div>
             <div class="stat-info"><div class="angka" id="statTamu">0</div><div class="label">Tamu Lapor</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-bullhorn"></i></div>
+            <div class="stat-info"><div class="angka" id="statKomunikasi">0</div><div class="label">Informasi</div></div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-coins"></i></div>
@@ -1244,6 +1252,18 @@
                 <tbody id="tableTamu"></tbody>
             </table>
         </div>
+    </div>
+
+    <!-- PANEL INFORMASI & KOMUNIKASI -->
+    <div id="tab-komunikasi" class="panel">
+        <div class="section-title">
+            <span><i class="fas fa-bullhorn" style="color:#b8860b;"></i> Informasi & Komunikasi</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <span class="loading-text" id="loadingKomunikasi"></span>
+                <button class="btn-tambah" data-modal="modalKomunikasi"><i class="fas fa-plus"></i> Tambah</button>
+            </div>
+        </div>
+        <div class="komunikasi-grid" id="komunikasiGrid"></div>
     </div>
 
     <!-- PANEL IURAN -->
@@ -1521,6 +1541,23 @@
     </div>
 </div>
 
+<!-- MODAL KOMUNIKASI -->
+<div class="modal-overlay" id="modalKomunikasi">
+    <div class="modal-box">
+        <h2><i class="fas fa-bullhorn" style="color:#b8860b;"></i> Tambah Informasi</h2>
+        <label>Judul</label>
+        <input id="inpKomJudul" placeholder="Judul informasi" />
+        <label>Konten</label>
+        <textarea id="inpKomKonten" placeholder="Isi informasi atau pengumuman..."></textarea>
+        <label>Tanggal</label>
+        <input type="date" id="inpKomTanggal" />
+        <div class="modal-actions">
+            <button class="btn-batal" data-close="modalKomunikasi">Batal</button>
+            <button class="btn-simpan" id="simpanKomunikasi">Simpan</button>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL TAMU -->
 <div class="modal-overlay" id="modalTamu">
     <div class="modal-box">
@@ -1699,6 +1736,7 @@
     const keluargaRef = db.collection('keluarga');
     const dokumentasiRef = db.collection('dokumentasi');
     const tamuRef = db.collection('tamu');
+    const komunikasiRef = db.collection('komunikasi');
     const iuranRef = db.collection('iuran');
     const settingsRef = db.collection('settings').doc('pengaturan');
 
@@ -1708,6 +1746,7 @@
     let dataKeluarga = [];
     let dokumentasi = [];
     let tamuWajibLapor = [];
+    let komunikasi = [];
     let iuranRT = [];
     let settingsData = {
         namaRT: 'RT 08 · Kelurahan Makmur',
@@ -1761,6 +1800,16 @@
             });
             setLoading('loadingTamu', '');
 
+            setLoading('loadingKomunikasi', '<span class="loading-spinner"></span> Memuat...');
+            const komSnapshot = await komunikasiRef.orderBy('tanggal', 'desc').get();
+            komunikasi = [];
+            komSnapshot.forEach(doc => {
+                const data = doc.data();
+                data.id = doc.id;
+                komunikasi.push(data);
+            });
+            setLoading('loadingKomunikasi', '');
+
             setLoading('loadingIuran', '<span class="loading-spinner"></span> Memuat...');
             const iuranSnapshot = await iuranRef.orderBy('bulan', 'desc').get();
             iuranRT = [];
@@ -1785,6 +1834,7 @@
             setLoading('loadingKeluarga', '⚠️ Gagal memuat data');
             setLoading('loadingDokumentasi', '⚠️ Gagal memuat data');
             setLoading('loadingTamu', '⚠️ Gagal memuat data');
+            setLoading('loadingKomunikasi', '⚠️ Gagal memuat data');
             setLoading('loadingIuran', '⚠️ Gagal memuat data');
             setLoading('loadingSettings', '⚠️ Gagal memuat data');
             updateSyncStatus(false);
@@ -2129,6 +2179,46 @@
         });
     }
 
+    function renderKomunikasi() {
+        const grid = document.getElementById('komunikasiGrid');
+        if (komunikasi.length === 0) {
+            grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:#6a7e94;background:white;border-radius:20px;border:1px solid #e9edf4;">Belum ada informasi. Klik "Tambah" untuk menambahkan.</div>`;
+        } else {
+            grid.innerHTML = komunikasi.map((kom, index) => {
+                return `
+                    <div class="kom-item">
+                        <div class="kom-body">
+                            <div class="kom-title">${kom.judul || 'Informasi'}</div>
+                            <div class="kom-date"><i class="far fa-calendar-alt"></i> ${kom.tanggal || '-'}</div>
+                            <div class="kom-description">${kom.konten || 'Tidak ada konten'}</div>
+                            <div class="kom-actions">
+                                <button class="btn-hapus-kom" data-kom-index="${index}"><i class="fas fa-trash"></i> Hapus</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        document.getElementById('statKomunikasi').textContent = komunikasi.length;
+
+        document.querySelectorAll('.btn-hapus-kom').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const idx = parseInt(this.dataset.komIndex);
+                if (confirm('Hapus informasi ini?')) {
+                    const kom = komunikasi[idx];
+                    if (kom.id) {
+                        komunikasiRef.doc(kom.id).delete().then(() => {
+                            loadAllData();
+                        }).catch(err => {
+                            alert('Gagal menghapus: ' + err.message);
+                        });
+                    }
+                }
+            });
+        });
+    }
+
     function renderIuran() {
         const tbody = document.getElementById('tableIuran');
         if (iuranRT.length === 0) {
@@ -2159,6 +2249,7 @@
         renderKeluarga();
         renderTamu();
         renderDokumentasi();
+        renderKomunikasi();
         renderIuran();
         renderSettings();
     }
@@ -3184,6 +3275,42 @@
     });
 
     // ======================================================================
+    // SIMPAN KOMUNIKASI
+    // ======================================================================
+    document.getElementById('simpanKomunikasi').addEventListener('click', function() {
+        const judul = document.getElementById('inpKomJudul').value.trim();
+        const konten = document.getElementById('inpKomKonten').value.trim();
+        const tanggal = document.getElementById('inpKomTanggal').value;
+        
+        if (!judul || !konten || !tanggal) {
+            alert('Semua field harus diisi!');
+            return;
+        }
+        
+        const data = {
+            judul,
+            konten,
+            tanggal,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        komunikasiRef.add(data).then(() => {
+            loadAllData();
+            closeModal('modalKomunikasi');
+            alert('Informasi berhasil ditambahkan!');
+        }).catch(err => {
+            alert('Gagal menambahkan: ' + err.message);
+        });
+    });
+
+    document.querySelector('.btn-tambah[data-modal="modalKomunikasi"]').addEventListener('click', function() {
+        document.getElementById('inpKomJudul').value = '';
+        document.getElementById('inpKomKonten').value = '';
+        document.getElementById('inpKomTanggal').value = '';
+        openModal('modalKomunikasi');
+    });
+
+    // ======================================================================
     // SETTINGS SAVE
     // ======================================================================
     document.getElementById('simpanPengurus').addEventListener('click', function() {
@@ -3465,6 +3592,11 @@
         if (id === 'modalViewFile') {
             document.getElementById('viewFileContent').innerHTML = '<p style="color:#6a7e94;text-align:center;">Tidak ada file untuk ditampilkan</p>';
         }
+        if (id === 'modalKomunikasi') {
+            document.getElementById('inpKomJudul').value = '';
+            document.getElementById('inpKomKonten').value = '';
+            document.getElementById('inpKomTanggal').value = '';
+        }
     }
 
     document.querySelectorAll('.modal-overlay').forEach(el => {
@@ -3495,6 +3627,11 @@
                 if (this.id === 'modalViewFile') {
                     document.getElementById('viewFileContent').innerHTML = '<p style="color:#6a7e94;text-align:center;">Tidak ada file untuk ditampilkan</p>';
                 }
+                if (this.id === 'modalKomunikasi') {
+                    document.getElementById('inpKomJudul').value = '';
+                    document.getElementById('inpKomKonten').value = '';
+                    document.getElementById('inpKomTanggal').value = '';
+                }
             }
         });
     });
@@ -3507,6 +3644,11 @@
         btn.addEventListener('click', function() {
             if (this.dataset.modal === 'modalKeluarga') resetModalKeluarga();
             if (this.dataset.modal === 'modalTamu') resetModalTamu();
+            if (this.dataset.modal === 'modalKomunikasi') {
+                document.getElementById('inpKomJudul').value = '';
+                document.getElementById('inpKomKonten').value = '';
+                document.getElementById('inpKomTanggal').value = '';
+            }
             openModal(this.dataset.modal);
         });
     });
@@ -3526,6 +3668,7 @@
         'tab-keluarga': 'Data Keluarga',
         'tab-dokumentasi': 'Kerja Bakti',
         'tab-tamu': 'Tamu Wajib Lapor',
+        'tab-komunikasi': 'Informasi & Komunikasi',
         'tab-iuran': 'Iuran RT',
         'tab-pengaturan': 'Pengaturan RT'
     };
@@ -3580,6 +3723,7 @@
     keluargaRef.onSnapshot(() => { loadAllData(); });
     dokumentasiRef.onSnapshot(() => { loadAllData(); });
     tamuRef.onSnapshot(() => { loadAllData(); });
+    komunikasiRef.onSnapshot(() => { loadAllData(); });
     iuranRef.onSnapshot(() => { loadAllData(); });
     settingsRef.onSnapshot(() => { loadAllData(); });
 </script>
