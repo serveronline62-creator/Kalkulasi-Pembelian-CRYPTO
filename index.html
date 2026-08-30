@@ -2152,6 +2152,7 @@
                             <div class="col-12 d-flex gap-1">
                                 <button class="btn btn-sm btn-outline-primary" style="border-radius:8px;font-size:0.7rem;padding:4px 10px;" onclick="scanBluetoothPrinters()"><i class="bi bi-bluetooth"></i> Cari</button>
                                 <button class="btn btn-sm btn-outline-success" style="border-radius:8px;font-size:0.7rem;padding:4px 10px;" onclick="testPrinterConnection()"><i class="bi bi-check-circle"></i> Tes</button>
+                                <button class="btn btn-sm btn-outline-warning" style="border-radius:8px;font-size:0.7rem;padding:4px 10px;" onclick="testPrintReceipt()"><i class="bi bi-printer"></i> Tes Print</button>
                             </div>
                             <div id="printer-scan-result" class="mt-1" style="font-size:0.7rem;color:var(--text-muted);"></div>
                         </div>
@@ -2358,6 +2359,9 @@
         let currentPeriodStart = null;
         let currentPeriodEnd = null;
         let uploadedData = [];
+        let printerDevice = null;
+        let printerService = null;
+        let printerCharacteristic = null;
 
         let appSettings = {
             storeName: '',
@@ -3647,7 +3651,18 @@
                 });
                 await db.ref().update(updates);
                 showToast('Transaksi berhasil!', 'success');
+                
+                // Set current receipt data and show modal
+                currentReceiptData = { idTrx, items: [...cart], total, bayar, kembalian, tgl };
                 showReceiptModal(idTrx, cart, total, bayar, kembalian, tgl);
+                
+                // Auto print to Bluetooth if connected
+                if (appSettings.printerConnected && appSettings.printerName) {
+                    setTimeout(() => {
+                        printToBluetooth();
+                    }, 500);
+                }
+                
                 cart = [];
                 document.getElementById('cart-bayar').value = '';
                 renderCart();
@@ -3703,6 +3718,150 @@
             text +=
                 `-------------------------------\n*TOTAL: ${formatRp(d.total)}*\nBAYAR: ${formatRp(d.bayar)}\nKEMBALIAN: ${formatRp(d.kembalian)}\n-------------------------------\n${footer}\n`;
             return text;
+        }
+
+        // ============================================================
+        // BLUETOOTH PRINTING
+        // ============================================================
+        async function connectToPrinter() {
+            if (!navigator.bluetooth) {
+                showToast('Web Bluetooth tidak didukung. Gunakan Chrome.', 'error');
+                return false;
+            }
+
+            const printerName = appSettings.printerName;
+            if (!printerName) {
+                showToast('Nama printer belum diatur di Pengaturan', 'error');
+                return false;
+            }
+
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: printerName }],
+                    optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', '000018f1-0000-1000-8000-00805f9b34fb']
+                });
+
+                const server = await device.gatt.connect();
+                
+                // Try to get the printer service
+                let service;
+                try {
+                    service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+                } catch (e) {
+                    // Try alternative service
+                    service = await server.getPrimaryService('000018f1-0000-1000-8000-00805f9b34fb');
+                }
+
+                // Try to get the characteristic for writing
+                let characteristic;
+                try {
+                    characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+                } catch (e) {
+                    // Try alternative characteristic
+                    characteristic = await service.getCharacteristic('00002af0-0000-1000-8000-00805f9b34fb');
+                }
+
+                printerDevice = device;
+                printerService = service;
+                printerCharacteristic = characteristic;
+                appSettings.printerConnected = true;
+                updatePrinterStatus();
+                saveSettings();
+                showToast(`Terhubung ke printer "${printerName}"`, 'success');
+                return true;
+            } catch (error) {
+                console.error('Bluetooth connection error:', error);
+                if (error.message.includes('cancelled')) {
+                    showToast('Koneksi dibatalkan', 'info');
+                } else {
+                    showToast('Gagal terhubung ke printer: ' + error.message, 'error');
+                }
+                appSettings.printerConnected = false;
+                updatePrinterStatus();
+                return false;
+            }
+        }
+
+        async function printToBluetooth() {
+            if (!currentReceiptData) {
+                showToast('Tidak ada data struk', 'error');
+                return;
+            }
+
+            // If not connected, try to connect first
+            if (!appSettings.printerConnected || !printerCharacteristic) {
+                const connected = await connectToPrinter();
+                if (!connected) {
+                    // Fallback to normal print
+                    showToast('Gagal connect printer, beralih ke print biasa', 'warning');
+                    printCurrentReceipt();
+                    return;
+                }
+            }
+
+            try {
+                const text = generateReceiptText();
+                // Convert text to bytes
+                const encoder = new TextEncoder();
+                const bytes = encoder.encode(text);
+                
+                // ESC/POS commands for better formatting
+                const esc = '\x1B';
+                const posCommands = [
+                    '\x1B\x40', // Initialize printer
+                    '\x1B\x61\x01', // Center align
+                    '\x1B\x21\x30', // Bold on
+                ];
+                
+                let fullData = '';
+                posCommands.forEach(cmd => fullData += cmd);
+                fullData += text;
+                fullData += '\x1B\x64\x04'; // Paper feed
+                fullData += '\x1B\x61\x00'; // Left align
+                fullData += '\x1D\x56\x42\x00'; // Partial cut
+
+                const data = encoder.encode(fullData);
+                
+                // Send in chunks if needed (max 20 bytes per write for some printers)
+                const chunkSize = 20;
+                for (let i = 0; i < data.length; i += chunkSize) {
+                    const chunk = data.slice(i, i + chunkSize);
+                    await printerCharacteristic.writeValue(chunk);
+                    // Small delay between chunks
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                
+                showToast('Struk berhasil dicetak ke Bluetooth!', 'success');
+            } catch (error) {
+                console.error('Print error:', error);
+                showToast('Gagal mencetak: ' + error.message, 'error');
+                // Fallback to normal print
+                printCurrentReceipt();
+            }
+        }
+
+        function testPrintReceipt() {
+            // Create sample receipt data for testing
+            const sampleItems = [
+                { nama: 'Product A', jual: 15000, qty: 2, modal: 10000 },
+                { nama: 'Product B', jual: 25000, qty: 1, modal: 18000 },
+                { nama: 'Product C', jual: 10000, qty: 3, modal: 7000 }
+            ];
+            const total = sampleItems.reduce((sum, item) => sum + (item.jual * item.qty), 0);
+            const bayar = total + 5000;
+            const kembalian = bayar - total;
+            const tgl = new Date().toLocaleString('id-ID');
+            const idTrx = 'TEST-' + Date.now();
+            
+            currentReceiptData = { idTrx, items: sampleItems, total, bayar, kembalian, tgl };
+            
+            if (appSettings.printerConnected && appSettings.printerName) {
+                printToBluetooth();
+            } else {
+                showToast('Printer tidak terhubung. Hubungkan dulu di Pengaturan.', 'warning');
+                // Show preview
+                showReceiptModal(idTrx, sampleItems, total, bayar, kembalian, tgl);
+            }
         }
 
         function printCurrentReceipt() {
@@ -3840,9 +3999,9 @@
 
         function updatePrinterStatus() {
             const div = document.getElementById('printer-status-display');
-            if (appSettings.printerConnected) {
+            if (appSettings.printerConnected && appSettings.printerName) {
                 div.innerHTML =
-                    `<span class="printer-status connected"><i class="bi bi-bluetooth"></i> ${appSettings.printerName || 'Terhubung'}</span>`;
+                    `<span class="printer-status connected"><i class="bi bi-bluetooth"></i> ${appSettings.printerName}</span>`;
             } else {
                 div.innerHTML =
                     `<span class="printer-status disconnected"><i class="bi bi-bluetooth"></i> Putus</span>`;
@@ -3871,7 +4030,7 @@
         }
 
         // ============================================================
-        // BLUETOOTH PRINTER
+        // BLUETOOTH PRINTER SCAN
         // ============================================================
         function scanBluetoothPrinters() {
             const result = document.getElementById('printer-scan-result');
@@ -3896,8 +4055,11 @@
                     appSettings.printerName = name;
                     appSettings.printerConnected = true;
                     updatePrinterStatus();
-                    showToast(`Printer "${name}" terhubung`, 'success');
+                    showToast(`Printer "${name}" ditemukan`, 'success');
                     saveSettings();
+                    
+                    // Try to connect to the printer
+                    connectToPrinter();
                 })
                 .catch(error => {
                     if (error.message.includes('cancelled')) {
@@ -3913,30 +4075,8 @@
         function testPrinterConnection() {
             const name = document.getElementById('settings-printer-name').value.trim();
             if (!name) { showToast('Masukkan nama printer', 'error'); return; }
-            showToast(`Tes koneksi ke "${name}"...`, 'info');
-            if (navigator.bluetooth) {
-                navigator.bluetooth.requestDevice({
-                        filters: [{ name: name }],
-                        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
-                    })
-                    .then(device => {
-                        appSettings.printerConnected = true;
-                        appSettings.printerName = device.name || name;
-                        updatePrinterStatus();
-                        showToast(`Terhubung ke "${appSettings.printerName}"`, 'success');
-                        saveSettings();
-                    })
-                    .catch(error => {
-                        appSettings.printerConnected = false;
-                        updatePrinterStatus();
-                        showToast('Koneksi gagal: ' + error.message, 'error');
-                    });
-            } else {
-                appSettings.printerConnected = true;
-                updatePrinterStatus();
-                showToast(`Tes ke "${name}" berhasil (simulasi)`, 'success');
-                saveSettings();
-            }
+            showToast(`Mencoba koneksi ke "${name}"...`, 'info');
+            connectToPrinter();
         }
 
         // ============================================================
@@ -3962,6 +4102,13 @@
                     }
                 }
             });
+            
+            // Load printer connection on startup
+            setTimeout(() => {
+                if (appSettings.printerName && appSettings.printerConnected) {
+                    connectToPrinter();
+                }
+            }, 2000);
         });
 
         window.addEventListener('resize', function() {
