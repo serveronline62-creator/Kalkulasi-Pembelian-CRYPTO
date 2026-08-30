@@ -12,6 +12,7 @@
     <!-- SheetJS untuk export Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* (semua style sama seperti sebelumnya, ditambah style untuk filter tanggal) */
         * {
             margin: 0;
             padding: 0;
@@ -1021,6 +1022,7 @@
             font-weight: 500;
             font-size: 0.8rem;
             color: #1d3b4f;
+            margin-right: 2px;
         }
         .filter-iuran select, .filter-iuran input {
             padding: 0.3rem 0.8rem;
@@ -1065,6 +1067,20 @@
         }
         .filter-iuran .btn-export.excel:hover {
             background: #1e8449;
+        }
+        .filter-iuran .filter-date-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .filter-iuran .filter-date-group input {
+            width: 150px;
+        }
+        @media (max-width: 768px) {
+            .filter-iuran .filter-date-group input {
+                width: 100%;
+            }
         }
 
         @media (max-width: 768px) {
@@ -1343,6 +1359,14 @@
                 <option value="Desember">Desember</option>
             </select>
             <input type="number" id="filterTahun" placeholder="Tahun" value="2026" style="width:90px;" />
+            
+            <div class="filter-date-group">
+                <label>Tanggal:</label>
+                <input type="date" id="filterTanggalDari" />
+                <span>s/d</span>
+                <input type="date" id="filterTanggalSampai" />
+            </div>
+
             <button class="btn-filter" id="btnFilterIuran"><i class="fas fa-filter"></i> Terapkan</button>
             <button class="btn-export" id="btnExportPDF"><i class="fas fa-file-pdf"></i> PDF</button>
             <button class="btn-export excel" id="btnExportExcel"><i class="fas fa-file-excel"></i> Excel</button>
@@ -1350,7 +1374,7 @@
 
         <div class="table-responsive" id="iuranTableWrapper">
             <table>
-                <thead><tr><th>Keluarga</th><th>Bulan</th><th>Nominal</th><th>Status</th></tr></thead>
+                <thead><tr><th>Keluarga</th><th>Bulan</th><th>Nominal</th><th>Status</th><th>Tanggal Input</th></tr></thead>
                 <tbody id="tableIuran"></tbody>
             </table>
         </div>
@@ -1382,7 +1406,7 @@
     </div>
 </main>
 
-<!-- ========== MODALS (sama seperti sebelumnya) ========== -->
+<!-- ========== MODALS ========== -->
 
 <!-- MODAL VIEW FILE -->
 <div class="modal-overlay" id="modalViewFile">
@@ -1699,7 +1723,7 @@
     </div>
 </div>
 
-<!-- MODAL IURAN -->
+<!-- MODAL IURAN (ditambah input tanggal) -->
 <div class="modal-overlay" id="modalIuran">
     <div class="modal-box">
         <h2><i class="fas fa-coins" style="color:#1f4780;"></i> Tambah Iuran</h2>
@@ -1707,6 +1731,8 @@
         <label>Bulan</label><input id="inpBulanIuran" placeholder="April 2026" />
         <label>Nominal (Rp)</label><input id="inpNominalIuran" type="number" placeholder="200000" />
         <label>Status</label><select id="inpStatusIuran"><option value="Lunas">Lunas</option><option value="Belum">Belum</option></select>
+        <label>Tanggal Input</label>
+        <input type="date" id="inpTanggalIuran" />
         <div class="modal-actions">
             <button class="btn-batal" data-close="modalIuran">Batal</button>
             <button class="btn-simpan" id="simpanIuran">Simpan</button>
@@ -1813,7 +1839,7 @@
     };
     let editTamuIndex = -1;
     let anggotaCount = 1;
-    let currentIuranFilter = { bulan: 'all', tahun: '2026' };
+    let currentIuranFilter = { bulan: 'all', tahun: '2026', tanggalDari: '', tanggalSampai: '' };
 
     // ======================================================================
     // LOADING INDICATORS
@@ -1859,7 +1885,7 @@
             setLoading('loadingInformasi', '');
 
             setLoading('loadingIuran', '<span class="loading-spinner"></span> Memuat...');
-            const iuranSnapshot = await iuranRef.orderBy('bulan', 'desc').get();
+            const iuranSnapshot = await iuranRef.orderBy('tanggalInput', 'desc').get();
             iuranRT = [];
             iuranSnapshot.forEach(doc => {
                 const data = doc.data();
@@ -1978,22 +2004,37 @@
     }
 
     // ======================================================================
-    // FILTER IURAN
+    // FILTER IURAN (termasuk tanggal)
     // ======================================================================
     function applyIuranFilter() {
         const bulan = document.getElementById('filterBulan').value;
         const tahun = document.getElementById('filterTahun').value.trim() || '2026';
-        currentIuranFilter = { bulan, tahun };
+        const tanggalDari = document.getElementById('filterTanggalDari').value;
+        const tanggalSampai = document.getElementById('filterTanggalSampai').value;
+        
+        currentIuranFilter = { bulan, tahun, tanggalDari, tanggalSampai };
         
         filteredIuran = iuranRT.filter(item => {
-            if (!item.bulan) return false;
-            // Ekstrak bulan dan tahun dari string "Januari 2026" atau "April 2026"
-            const parts = item.bulan.split(' ');
-            if (parts.length !== 2) return true; // jika format tidak sesuai, tampilkan semua
-            const itemBulan = parts[0];
-            const itemTahun = parts[1];
-            if (bulan !== 'all' && itemBulan !== bulan) return false;
-            if (itemTahun !== tahun) return false;
+            // Filter bulan/tahun
+            if (item.bulan) {
+                const parts = item.bulan.split(' ');
+                if (parts.length === 2) {
+                    const itemBulan = parts[0];
+                    const itemTahun = parts[1];
+                    if (bulan !== 'all' && itemBulan !== bulan) return false;
+                    if (itemTahun !== tahun) return false;
+                }
+            }
+            
+            // Filter tanggal input
+            if (item.tanggalInput) {
+                if (tanggalDari && item.tanggalInput < tanggalDari) return false;
+                if (tanggalSampai && item.tanggalInput > tanggalSampai) return false;
+            } else {
+                // Jika tidak ada tanggalInput, lewatkan filter tanggal
+                if (tanggalDari || tanggalSampai) return false;
+            }
+            
             return true;
         });
         renderIuran();
@@ -2254,7 +2295,7 @@
         const tbody = document.getElementById('tableIuran');
         const data = filteredIuran.length > 0 ? filteredIuran : iuranRT;
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:#6a7e94;">Tidak ada data iuran untuk periode ini.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:#6a7e94;">Tidak ada data iuran untuk periode ini.</td></tr>`;
             document.getElementById('statIuran').innerHTML = 'Rp 0';
             document.getElementById('totalIuranText').textContent = '0';
             return;
@@ -2263,7 +2304,8 @@
         tbody.innerHTML = data.map(i => {
             const lunas = i.status === 'Lunas';
             if (lunas) total += (i.nominal || 0);
-            return `<tr><td><strong>${i.keluarga || '-'}</strong></td><td>${i.bulan || '-'}</td><td>Rp ${(i.nominal || 0).toLocaleString('id-ID')}</td><td><span class="tag ${lunas ? 'tag-warga' : 'tag-tamu'}">${i.status || 'Belum'}</span></td></tr>`;
+            const tglInput = i.tanggalInput ? i.tanggalInput : '-';
+            return `<tr><td><strong>${i.keluarga || '-'}</strong></td><td>${i.bulan || '-'}</td><td>Rp ${(i.nominal || 0).toLocaleString('id-ID')}</td><td><span class="tag ${lunas ? 'tag-warga' : 'tag-tamu'}">${i.status || 'Belum'}</span></td><td>${tglInput}</td></tr>`;
         }).join('');
         document.getElementById('statIuran').innerHTML = `Rp ${total.toLocaleString('id-ID')}`;
         document.getElementById('totalIuranText').textContent = total.toLocaleString('id-ID');
@@ -3536,17 +3578,26 @@
     });
 
     // ======================================================================
-    // SIMPAN IURAN
+    // SIMPAN IURAN (dengan tanggalInput)
     // ======================================================================
     document.getElementById('simpanIuran').addEventListener('click', function() {
         const keluarga = document.getElementById('inpKeluargaIuran').value.trim().toUpperCase();
         const bulan = document.getElementById('inpBulanIuran').value.trim();
         const nominal = parseInt(document.getElementById('inpNominalIuran').value) || 0;
         const status = document.getElementById('inpStatusIuran').value;
-        if (!keluarga || !bulan || nominal <= 0) { alert('Isi semua field dengan benar (nominal > 0)'); return; }
+        const tanggalInput = document.getElementById('inpTanggalIuran').value;
+        
+        if (!keluarga || !bulan || nominal <= 0) { 
+            alert('Isi semua field dengan benar (nominal > 0)'); 
+            return; 
+        }
+        if (!tanggalInput) {
+            alert('Tanggal input harus diisi');
+            return;
+        }
         
         const data = {
-            keluarga, bulan, nominal, status,
+            keluarga, bulan, nominal, status, tanggalInput,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
         
@@ -3578,6 +3629,7 @@
         data.forEach((item, index) => {
             const lunas = item.status === 'Lunas';
             if (lunas) total += (item.nominal || 0);
+            const tglInput = item.tanggalInput || '-';
             rows += `
                 <tr>
                     <td style="padding:6px 10px;border-bottom:1px solid #e5ecf5;">${index + 1}</td>
@@ -3585,6 +3637,7 @@
                     <td style="padding:6px 10px;border-bottom:1px solid #e5ecf5;">${item.bulan || '-'}</td>
                     <td style="padding:6px 10px;border-bottom:1px solid #e5ecf5;text-align:right;">Rp ${(item.nominal || 0).toLocaleString('id-ID')}</td>
                     <td style="padding:6px 10px;border-bottom:1px solid #e5ecf5;">${item.status || 'Belum'}</td>
+                    <td style="padding:6px 10px;border-bottom:1px solid #e5ecf5;">${tglInput}</td>
                 </tr>
             `;
         });
@@ -3592,6 +3645,8 @@
         const periode = currentIuranFilter.bulan !== 'all' ? 
             `Periode: ${currentIuranFilter.bulan} ${currentIuranFilter.tahun}` : 
             `Periode: Semua (${currentIuranFilter.tahun})`;
+        const tglFilter = (currentIuranFilter.tanggalDari || currentIuranFilter.tanggalSampai) ? 
+            ` | Tanggal: ${currentIuranFilter.tanggalDari || 'awal'} s/d ${currentIuranFilter.tanggalSampai || 'akhir'}` : '';
         
         pdfContainer.innerHTML = `
             <h2 style="color:#0b2b3d;border-bottom:2px solid #1c5f4e;padding-bottom:10px;margin-bottom:15px;">
@@ -3599,7 +3654,7 @@
             </h2>
             <div style="display:flex;justify-content:space-between;margin-bottom:15px;font-size:14px;color:#1d3b4f;">
                 <span><strong>${settingsData.namaRT || 'RT Kita'}</strong></span>
-                <span>${periode}</span>
+                <span>${periode} ${tglFilter}</span>
             </div>
             <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #dde3ed;border-radius:6px;overflow:hidden;">
                 <thead>
@@ -3609,6 +3664,7 @@
                         <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #c8d4e3;">Bulan</th>
                         <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #c8d4e3;">Nominal</th>
                         <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #c8d4e3;">Status</th>
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #c8d4e3;">Tanggal Input</th>
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
@@ -3616,7 +3672,7 @@
                     <tr style="background:#f8faff;font-weight:600;">
                         <td colspan="3" style="padding:8px 10px;text-align:right;">Total Terkumpul</td>
                         <td style="padding:8px 10px;text-align:right;">Rp ${total.toLocaleString('id-ID')}</td>
-                        <td></td>
+                        <td colspan="2"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -3629,7 +3685,7 @@
             filename: `Laporan_Iuran_RT_${new Date().toISOString().slice(0,10)}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
         }).from(pdfContainer).save().then(() => {
             document.body.removeChild(pdfContainer);
         }).catch(() => {
@@ -3651,7 +3707,8 @@
             'Keluarga': item.keluarga || '-',
             'Bulan': item.bulan || '-',
             'Nominal': item.nominal || 0,
-            'Status': item.status || 'Belum'
+            'Status': item.status || 'Belum',
+            'Tanggal Input': item.tanggalInput || '-'
         }));
 
         // Tambahkan baris total
@@ -3661,7 +3718,8 @@
             'Keluarga': 'TOTAL TERKUMPUL',
             'Bulan': '',
             'Nominal': total,
-            'Status': ''
+            'Status': '',
+            'Tanggal Input': ''
         });
 
         const wb = XLSX.utils.book_new();
@@ -3673,7 +3731,8 @@
             { wch: 25 },
             { wch: 18 },
             { wch: 18 },
-            { wch: 12 }
+            { wch: 12 },
+            { wch: 16 }
         ];
 
         XLSX.utils.book_append_sheet(wb, ws, 'Iuran RT');
@@ -3689,11 +3748,18 @@
     });
 
     document.getElementById('filterBulan').addEventListener('change', function() {
-        // Otomatis terapkan filter saat bulan berubah
         applyIuranFilter();
     });
 
     document.getElementById('filterTahun').addEventListener('change', function() {
+        applyIuranFilter();
+    });
+
+    document.getElementById('filterTanggalDari').addEventListener('change', function() {
+        applyIuranFilter();
+    });
+
+    document.getElementById('filterTanggalSampai').addEventListener('change', function() {
         applyIuranFilter();
     });
 
@@ -3729,6 +3795,13 @@
         if (id === 'modalViewFile') {
             document.getElementById('viewFileContent').innerHTML = '<p style="color:#6a7e94;text-align:center;">Tidak ada file untuk ditampilkan</p>';
         }
+        if (id === 'modalIuran') {
+            document.getElementById('inpKeluargaIuran').value = '';
+            document.getElementById('inpBulanIuran').value = '';
+            document.getElementById('inpNominalIuran').value = '';
+            document.getElementById('inpStatusIuran').value = 'Lunas';
+            document.getElementById('inpTanggalIuran').value = new Date().toISOString().slice(0,10);
+        }
     }
 
     document.querySelectorAll('.modal-overlay').forEach(el => {
@@ -3759,6 +3832,13 @@
                 if (this.id === 'modalViewFile') {
                     document.getElementById('viewFileContent').innerHTML = '<p style="color:#6a7e94;text-align:center;">Tidak ada file untuk ditampilkan</p>';
                 }
+                if (this.id === 'modalIuran') {
+                    document.getElementById('inpKeluargaIuran').value = '';
+                    document.getElementById('inpBulanIuran').value = '';
+                    document.getElementById('inpNominalIuran').value = '';
+                    document.getElementById('inpStatusIuran').value = 'Lunas';
+                    document.getElementById('inpTanggalIuran').value = new Date().toISOString().slice(0,10);
+                }
             }
         });
     });
@@ -3771,6 +3851,13 @@
         btn.addEventListener('click', function() {
             if (this.dataset.modal === 'modalKeluarga') resetModalKeluarga();
             if (this.dataset.modal === 'modalTamu') resetModalTamu();
+            if (this.dataset.modal === 'modalIuran') {
+                document.getElementById('inpKeluargaIuran').value = '';
+                document.getElementById('inpBulanIuran').value = '';
+                document.getElementById('inpNominalIuran').value = '';
+                document.getElementById('inpStatusIuran').value = 'Lunas';
+                document.getElementById('inpTanggalIuran').value = new Date().toISOString().slice(0,10);
+            }
             openModal(this.dataset.modal);
         });
     });
@@ -3843,6 +3930,8 @@
 
     // Set default tahun
     document.getElementById('filterTahun').value = new Date().getFullYear();
+    // Set default tanggal input di modal iuran
+    document.getElementById('inpTanggalIuran').value = new Date().toISOString().slice(0,10);
 
     // Initialize anggota counter
     updateAnggotaCounter();
