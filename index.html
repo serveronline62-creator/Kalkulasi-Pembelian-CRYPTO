@@ -8,6 +8,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -22,6 +23,123 @@
             display: flex;
             min-height: 100vh;
         }
+
+        /* ================= LOGIN SCREEN ================= */
+        body.not-logged-in .sidebar,
+        body.not-logged-in .main-content {
+            display: none !important;
+        }
+        .login-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 20% 20%, #134a3b 0%, #0b2b3d 55%, #061a25 100%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.2rem;
+            z-index: 5000;
+        }
+        .login-overlay.show { display: flex; }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255,255,255,0.97);
+            border-radius: 26px;
+            padding: 2.2rem 2rem 1.6rem;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.45);
+            animation: slideUp 0.35s ease;
+        }
+        .login-brand { text-align: center; margin-bottom: 1.4rem; }
+        .login-brand i {
+            font-size: 2.4rem;
+            color: #1c5f4e;
+            background: #e2f0ee;
+            width: 74px; height: 74px;
+            border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-bottom: 0.7rem;
+        }
+        .login-brand h1 { font-size: 1.5rem; color: #0b2b3d; font-weight: 700; letter-spacing: 0.4px; }
+        .login-brand p { font-size: 0.8rem; color: #6a7e94; margin-top: 2px; }
+        .login-card label {
+            display: block; font-size: 0.78rem; font-weight: 600;
+            color: #1d3b4f; margin: 0.7rem 0 0.3rem;
+        }
+        .login-input {
+            display: flex; align-items: center; gap: 10px;
+            background: #f5f8fc;
+            border: 1px solid #d6e0ec;
+            border-radius: 40px;
+            padding: 0.55rem 1rem;
+            transition: 0.15s;
+        }
+        .login-input:focus-within {
+            border-color: #1c5f4e;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(28,95,78,0.15);
+        }
+        .login-input > i { color: #7b8fa5; font-size: 0.9rem; }
+        .login-input input {
+            flex: 1; border: none; background: transparent; outline: none;
+            font-size: 0.9rem; color: #0b2b3d; padding: 0.1rem 0;
+        }
+        .toggle-pass {
+            background: none; border: none; cursor: pointer;
+            color: #7b8fa5; font-size: 0.9rem;
+        }
+        .toggle-pass:hover { color: #1c5f4e; }
+        .login-error {
+            min-height: 18px;
+            color: #e74c3c;
+            font-size: 0.78rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+        .btn-login {
+            width: 100%;
+            margin-top: 0.6rem;
+            background: #1c5f4e;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 40px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 8px 18px rgba(28,95,78,0.28);
+        }
+        .btn-login:hover:not(:disabled) { background: #134a3b; transform: translateY(-1px); }
+        .btn-login:disabled { opacity: 0.7; cursor: not-allowed; }
+        .login-links { text-align: center; margin-top: 0.9rem; }
+        .login-links a { font-size: 0.78rem; color: #2a7f6e; text-decoration: none; font-weight: 500; }
+        .login-links a:hover { text-decoration: underline; }
+        .login-footer {
+            text-align: center; font-size: 0.7rem; color: #9aa9ba;
+            margin-top: 1.4rem; padding-top: 0.9rem;
+            border-top: 1px solid #e9edf4;
+        }
+        .user-info .user-email {
+            font-size: 0.72rem; color: #6a7e94; font-weight: 500;
+            max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .btn-logout {
+            background: #fdecea;
+            border: none;
+            color: #c0392b;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: 0.15s;
+            flex-shrink: 0;
+        }
+        .btn-logout:hover { background: #e74c3c; color: white; }
+        @media (max-width: 480px) {
+            .user-info .user-email { display: none; }
+        }
+        /* ================= /LOGIN SCREEN ================= */
 
         .sidebar {
             width: 260px;
@@ -567,17 +685,7 @@
             background: #fafcff;
             transition: 0.1s;
         }
-        .settings-card input[type="password"] {
-            width: 100%;
-            padding: 0.6rem 1rem;
-            border-radius: 40px;
-            border: 1px solid #d0dbe9;
-            font-size: 0.9rem;
-            background: #fafcff;
-            transition: 0.1s;
-        }
-        .settings-card input[type="text"]:focus,
-        .settings-card input[type="password"]:focus {
+        .settings-card input[type="text"]:focus {
             outline: none;
             border-color: #1c5f4e;
             box-shadow: 0 0 0 3px rgba(28,95,78,0.15);
@@ -1194,161 +1302,42 @@
             font-size: 0.7rem;
             font-weight: 600;
         }
-
-        /* ================= LOGIN ================= */
-        .login-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #0b2b3d 0%, #134a3b 60%, #1c5f4e 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 1.2rem;
-        }
-        .login-overlay.hide { display: none; }
-        .login-card {
-            background: #fff;
-            width: 100%;
-            max-width: 400px;
-            border-radius: 28px;
-            padding: 2.2rem 2rem 1.8rem;
-            box-shadow: 0 30px 60px rgba(0,0,0,.35);
-            animation: slideUp 0.3s ease;
-        }
-        .login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 1.4rem; }
-        .login-brand i { font-size: 2.2rem; color: #1c5f4e; }
-        .login-brand h1 { font-size: 1.3rem; color: #0b2b3d; font-weight: 700; line-height: 1.1; }
-        .login-brand span { font-size: 0.7rem; color: #6a7e94; font-weight: 500; }
-        .login-card h2 { font-size: 1.15rem; color: #0b2b3d; margin-bottom: 0.2rem; }
-        .login-sub { font-size: 0.82rem; color: #6a7e94; margin-bottom: 1.2rem; }
-        .login-card label {
-            font-weight: 500;
-            color: #1d3b4f;
-            display: block;
-            margin: 0.7rem 0 0.25rem;
-            font-size: 0.8rem;
-        }
-        .login-card input {
-            width: 100%;
-            padding: 0.65rem 1rem;
-            border-radius: 40px;
-            border: 1px solid #d0dbe9;
-            font-size: 0.9rem;
-            background: #fafcff;
-            transition: 0.15s;
-        }
-        .login-card input:focus {
-            outline: none;
-            border-color: #1c5f4e;
-            box-shadow: 0 0 0 3px rgba(28,95,78,.15);
-        }
-        .password-wrap { position: relative; }
-        .password-wrap input { padding-right: 3rem; }
-        .password-wrap .toggle-pass {
-            position: absolute;
-            right: 6px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #6a7e94;
-            cursor: pointer;
-            padding: 0.4rem 0.6rem;
-            border-radius: 50%;
-        }
-        .password-wrap .toggle-pass:hover { color: #1c5f4e; background: #eef4f2; }
-        .login-error {
-            display: none;
-            margin-top: 0.8rem;
-            background: #fdecea;
-            color: #c0392b;
-            font-size: 0.8rem;
-            padding: 0.5rem 0.9rem;
-            border-radius: 12px;
-            border: 1px solid #f5c6c2;
-        }
-        .login-error.show { display: block; }
-        .btn-login {
-            width: 100%;
-            margin-top: 1.2rem;
-            background: #1c5f4e;
-            color: #fff;
-            border: none;
-            padding: 0.75rem;
-            border-radius: 60px;
-            font-weight: 700;
-            font-size: 0.92rem;
-            cursor: pointer;
-            transition: 0.15s;
-            box-shadow: 0 6px 14px rgba(28,95,78,.25);
-        }
-        .btn-login:hover { background: #134a3b; transform: translateY(-1px); }
-        .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-        .login-hint {
-            margin-top: 1rem;
-            font-size: 0.72rem;
-            color: #8a9aab;
-            text-align: center;
-            line-height: 1.5;
-        }
-        .btn-logout {
-            background: #fdecea;
-            border: none;
-            color: #c0392b;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.15s;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-        }
-        .btn-logout:hover { background: #e74c3c; color: #fff; }
     </style>
 </head>
-<body>
+<body class="not-logged-in">
 
-<!-- ========== LOGIN OVERLAY ========== -->
-<div class="login-overlay" id="loginOverlay">
+<!-- ================= LOGIN SCREEN ================= -->
+<div class="login-overlay show" id="loginScreen">
     <div class="login-card">
         <div class="login-brand">
             <i class="fas fa-people-roof"></i>
-            <div>
-                <h1>RT Kita</h1>
-                <span>Manajemen Rukun Tetangga</span>
+            <h1>RT Kita</h1>
+            <p>Manajemen Rukun Tetangga</p>
+        </div>
+        <form id="loginForm" autocomplete="on">
+            <label for="loginUsername">Username / Email</label>
+            <div class="login-input">
+                <i class="fas fa-user"></i>
+                <input type="text" id="loginUsername" placeholder="username atau email" autocomplete="username" required />
             </div>
-        </div>
-        <h2>Masuk ke Akun Anda</h2>
-        <p class="login-sub">Silakan login untuk mengelola data RT.</p>
-
-        <label>Username</label>
-        <input type="text" id="loginUsername" placeholder="Username" autocomplete="username" />
-
-        <label>Password</label>
-        <div class="password-wrap">
-            <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
-            <button type="button" class="toggle-pass" id="togglePassword" title="Lihat password">
-                <i class="fas fa-eye"></i>
-            </button>
-        </div>
-
-        <div class="login-error" id="loginError"></div>
-
-        <button class="btn-login" id="btnLogin"><i class="fas fa-right-to-bracket"></i> Masuk</button>
-
-        <div class="login-hint">
-            Default: <strong>admin</strong> / <strong>admin123</strong><br />
-            Segera ubah di menu Pengaturan setelah login.
+            <label for="loginPassword">Password</label>
+            <div class="login-input">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required />
+                <button type="button" class="toggle-pass" id="togglePassword" title="Lihat password"><i class="fas fa-eye"></i></button>
+            </div>
+            <div class="login-error" id="loginError"></div>
+            <button type="submit" class="btn-login" id="btnLogin"><i class="fas fa-right-to-bracket"></i> Masuk</button>
+            <div class="login-links">
+                <a href="#" id="linkLupaPassword">Lupa password?</a>
+            </div>
+        </form>
+        <div class="login-footer">
+            <i class="fas fa-shield-halved"></i> Diamankan oleh Firebase Authentication
         </div>
     </div>
 </div>
+<!-- ================= /LOGIN SCREEN ================= -->
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
@@ -1400,6 +1389,7 @@
         <div class="user-info">
             <i class="fas fa-user-circle"></i>
             <span id="headerKetuaRT">Ketua RT</span>
+            <span class="user-email" id="headerUserEmail"></span>
             <button class="btn-logout" id="btnLogout" title="Keluar"><i class="fas fa-right-from-bracket"></i></button>
         </div>
     </div>
@@ -1575,20 +1565,6 @@
                 <label>Nama Bendahara RT</label>
                 <input type="text" id="settingBendahara" placeholder="Nama Bendahara RT" />
                 <button class="btn-simpan-setting" id="simpanPengurus">Simpan Pengurus</button>
-            </div>
-
-            <!-- KARTU AKUN LOGIN (BARU) -->
-            <div class="settings-card">
-                <h3><i class="fas fa-user-shield" style="color:#1c5f4e;"></i> Akun Login</h3>
-                <label>Username</label>
-                <input type="text" id="settingUsername" placeholder="Username" />
-                <label>Password Lama</label>
-                <input type="password" id="settingPassLama" placeholder="Masukkan password lama" />
-                <label>Password Baru</label>
-                <input type="password" id="settingPassBaru" placeholder="Minimal 6 karakter (opsional)" />
-                <label>Konfirmasi Password Baru</label>
-                <input type="password" id="settingPassKonfirm" placeholder="Ulangi password baru" />
-                <button class="btn-simpan-setting" id="simpanAkun">Simpan Akun</button>
             </div>
         </div>
     </div>
@@ -2012,6 +1988,145 @@
     const db = firebase.firestore();
 
     // ======================================================================
+    // FIREBASE AUTHENTICATION
+    // ======================================================================
+    const auth = firebase.auth();
+
+    // Domain internal untuk login memakai "username" (bukan email).
+    // Contoh: username "bendahara"  ->  bendahara@rtkita.app
+    // Buat user di Firebase Console dengan format email tersebut.
+    const USERNAME_DOMAIN = '@rtkita.app';
+
+    let currentUser = null;
+    let appStarted = false;
+
+    function usernameToEmail(input) {
+        const v = (input || '').trim();
+        if (!v) return '';
+        return v.indexOf('@') !== -1 ? v : v + USERNAME_DOMAIN;
+    }
+
+    function translateAuthError(err) {
+        const code = (err && err.code) ? err.code : '';
+        const map = {
+            'auth/invalid-email': 'Format email/username tidak valid.',
+            'auth/user-disabled': 'Akun ini telah dinonaktifkan.',
+            'auth/user-not-found': 'Username/email tidak terdaftar.',
+            'auth/wrong-password': 'Password salah.',
+            'auth/invalid-credential': 'Username/email atau password salah.',
+            'auth/invalid-login-credentials': 'Username/email atau password salah.',
+            'auth/too-many-requests': 'Terlalu banyak percobaan. Coba lagi beberapa saat.',
+            'auth/network-request-failed': 'Koneksi internet bermasalah.',
+            'auth/missing-password': 'Password wajib diisi.'
+        };
+        return map[code] || (err && err.message ? err.message : 'Gagal masuk. Silakan coba lagi.');
+    }
+
+    function showLoginScreen() {
+        document.body.classList.add('not-logged-in');
+        document.getElementById('loginScreen').classList.add('show');
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginError').textContent = '';
+    }
+
+    function hideLoginScreen() {
+        document.body.classList.remove('not-logged-in');
+        document.getElementById('loginScreen').classList.remove('show');
+    }
+
+    function resetLoginButton() {
+        const btn = document.getElementById('btnLogin');
+        if (!btn) return;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Masuk';
+    }
+
+    // --- Toggle lihat password ---
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const inp = document.getElementById('loginPassword');
+        const icon = this.querySelector('i');
+        if (inp.type === 'password') {
+            inp.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            inp.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    });
+
+    // --- Submit login ---
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnLogin');
+        const errBox = document.getElementById('loginError');
+        const email = usernameToEmail(document.getElementById('loginUsername').value);
+        const pass = document.getElementById('loginPassword').value;
+
+        errBox.textContent = '';
+        if (!email || !pass) {
+            errBox.textContent = 'Username dan password wajib diisi.';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading-spinner"></span> Memproses...';
+
+        try {
+            await auth.signInWithEmailAndPassword(email, pass);
+            // onAuthStateChanged akan menangani sisanya
+        } catch (err) {
+            console.error('Login error:', err);
+            errBox.textContent = translateAuthError(err);
+            resetLoginButton();
+        }
+    });
+
+    // --- Lupa password ---
+    document.getElementById('linkLupaPassword').addEventListener('click', async function(e) {
+        e.preventDefault();
+        const errBox = document.getElementById('loginError');
+        const input = prompt('Masukkan username atau email untuk reset password:');
+        if (!input) return;
+        const email = usernameToEmail(input);
+        errBox.textContent = '';
+        try {
+            await auth.sendPasswordResetEmail(email);
+            alert('Link reset password telah dikirim ke: ' + email + '\n\nCek kotak masuk email tersebut.');
+        } catch (err) {
+            console.error('Reset password error:', err);
+            errBox.textContent = translateAuthError(err);
+        }
+    });
+
+    // --- Logout ---
+    document.getElementById('btnLogout').addEventListener('click', function() {
+        if (confirm('Keluar dari aplikasi RT Kita?')) {
+            auth.signOut().catch(err => alert('Gagal keluar: ' + err.message));
+        }
+    });
+
+    // --- Auth state listener ---
+    auth.onAuthStateChanged(function(user) {
+        currentUser = user;
+        if (user) {
+            hideLoginScreen();
+            resetLoginButton();
+            document.getElementById('headerUserEmail').textContent = user.email || '';
+            document.getElementById('loginPassword').value = '';
+
+            if (!appStarted) {
+                appStarted = true;
+                startApp();
+            } else {
+                loadAllData();
+            }
+        } else {
+            document.getElementById('headerUserEmail').textContent = '';
+            showLoginScreen();
+        }
+    });
+
+    // ======================================================================
     // GOFILE UPLOAD FUNCTION
     // ======================================================================
     async function uploadToGoFile(file, onProgress) {
@@ -2104,6 +2219,8 @@
     // LOAD DATA FROM FIREBASE
     // ======================================================================
     async function loadAllData() {
+        if (!currentUser) return; // hanya muat data bila sudah login
+
         try {
             setLoading('loadingKeluarga', '<span class="loading-spinner"></span> Memuat...');
             const keluargaSnapshot = await keluargaRef.orderBy('kepala').get();
@@ -2175,7 +2292,9 @@
             setLoading('loadingIuran', '⚠️ Gagal memuat data');
             setLoading('loadingSettings', '⚠️ Gagal memuat data');
             updateSyncStatus(false);
-            alert('Gagal memuat data dari Firebase. Pastikan koneksi internet Anda aktif.');
+            if (currentUser) {
+                alert('Gagal memuat data dari Firebase. Pastikan koneksi internet Anda aktif.');
+            }
         }
     }
 
@@ -4288,233 +4407,30 @@
     });
 
     // ======================================================================
-    // AUTENTIKASI LOGIN
+    // START APP (dijalankan setelah login berhasil)
     // ======================================================================
-    const AUTH_DOC_REF = db.collection('settings').doc('auth');
-    const SESSION_KEY = 'rtkita_session';
-    const DEFAULT_AUTH = { username: 'admin', password: 'admin123' };
-    const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 hari
-    let appStarted = false;
-
-    async function sha256(text) {
-        try {
-            if (window.crypto && window.crypto.subtle) {
-                const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-            }
-        } catch (e) {}
-        return null;
-    }
-
-    async function hashPass(pw) {
-        const h = await sha256(pw);
-        return h ? 'sha256:' + h : 'plain:' + pw;
-    }
-
-    async function verifyPass(pw, stored) {
-        if (!stored) return false;
-        if (stored.indexOf('sha256:') === 0) {
-            const h = await sha256(pw);
-            return h !== null && stored === 'sha256:' + h;
-        }
-        if (stored.indexOf('plain:') === 0) {
-            return stored === 'plain:' + pw;
-        }
-        return stored === pw;
-    }
-
-    async function ensureAuthDoc() {
-        const snap = await AUTH_DOC_REF.get();
-        if (!snap.exists) {
-            const initData = {
-                username: DEFAULT_AUTH.username,
-                passwordHash: await hashPass(DEFAULT_AUTH.password),
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            await AUTH_DOC_REF.set(initData);
-            return initData;
-        }
-        return snap.data();
-    }
-
-    function showLoginError(msg) {
-        const el = document.getElementById('loginError');
-        el.textContent = msg;
-        el.classList.add('show');
-    }
-
-    function hideLogin() {
-        document.getElementById('loginOverlay').classList.add('hide');
-    }
-
-    function showLogin() {
-        document.getElementById('loginOverlay').classList.remove('hide');
-        document.getElementById('loginUsername').value = '';
-        document.getElementById('loginPassword').value = '';
-        document.getElementById('loginError').classList.remove('show');
-    }
-
-    function hasValidSession() {
-        try {
-            const raw = localStorage.getItem(SESSION_KEY);
-            if (!raw) return false;
-            const s = JSON.parse(raw);
-            if (!s.loginAt || (Date.now() - s.loginAt) > SESSION_DURATION) {
-                localStorage.removeItem(SESSION_KEY);
-                return false;
-            }
-            return true;
-        } catch (e) { return false; }
-    }
-
-    async function doLogin() {
-        const btn = document.getElementById('btnLogin');
-        const errBox = document.getElementById('loginError');
-        const u = document.getElementById('loginUsername').value.trim();
-        const p = document.getElementById('loginPassword').value;
-        errBox.classList.remove('show');
-
-        if (!u || !p) { showLoginError('Username dan password wajib diisi.'); return; }
-
-        btn.disabled = true;
-        btn.innerHTML = '<span class="loading-spinner" style="border-color:rgba(255,255,255,.35);border-top-color:#fff;margin-right:6px;"></span> Memproses...';
-
-        try {
-            const auth = await ensureAuthDoc();
-            const okUser = String(auth.username || '').toLowerCase() === u.toLowerCase();
-            const okPass = await verifyPass(p, auth.passwordHash || auth.password);
-
-            if (okUser && okPass) {
-                localStorage.setItem(SESSION_KEY, JSON.stringify({
-                    username: auth.username,
-                    loginAt: Date.now()
-                }));
-                document.getElementById('loginPassword').value = '';
-                hideLogin();
-                startApp();
-            } else {
-                showLoginError('Username atau password salah.');
-            }
-        } catch (e) {
-            console.error(e);
-            showLoginError('Gagal verifikasi. Periksa koneksi internet Anda.');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Masuk';
-        }
-    }
-
     function startApp() {
-        if (appStarted) return;
-        appStarted = true;
+        if (GOFILE_API_TOKEN === 'YOUR_API_TOKEN_HERE') {
+            console.warn('⚠️ GoFile API token belum diatur. Silakan ganti GOFILE_API_TOKEN dengan token Anda.');
+        }
+
+        const now = new Date();
+        document.getElementById('filterTahun').value = now.getFullYear();
+        document.getElementById('inpTahunIuran').value = now.getFullYear();
+        document.getElementById('inpTglIuran').value = now.toISOString().split('T')[0];
+        document.getElementById('inpPelayananTanggal').value = now.toISOString().split('T')[0];
+
         updateAnggotaCounter();
-        loadAccountForm();
+
         loadAllData();
-        keluargaRef.onSnapshot(() => { loadAllData(); });
-        tamuRef.onSnapshot(() => { loadAllData(); });
-        pelayananRef.onSnapshot(() => { loadAllData(); });
-        informasiRef.onSnapshot(() => { loadAllData(); });
-        iuranRef.onSnapshot(() => { loadAllData(); });
-        settingsRef.onSnapshot(() => { loadAllData(); });
-    }
 
-    async function loadAccountForm() {
-        try {
-            const snap = await AUTH_DOC_REF.get();
-            if (snap.exists) {
-                document.getElementById('settingUsername').value = snap.data().username || '';
-            }
-        } catch (e) {}
-    }
-
-    document.getElementById('btnLogin').addEventListener('click', doLogin);
-    document.getElementById('loginPassword').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') doLogin();
-    });
-    document.getElementById('loginUsername').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') document.getElementById('loginPassword').focus();
-    });
-    document.getElementById('togglePassword').addEventListener('click', function() {
-        const inp = document.getElementById('loginPassword');
-        const icon = this.querySelector('i');
-        if (inp.type === 'password') {
-            inp.type = 'text';
-            icon.className = 'fas fa-eye-slash';
-        } else {
-            inp.type = 'password';
-            icon.className = 'fas fa-eye';
-        }
-    });
-
-    document.getElementById('btnLogout').addEventListener('click', function() {
-        if (!confirm('Keluar dari aplikasi?')) return;
-        localStorage.removeItem(SESSION_KEY);
-        location.reload();
-    });
-
-    // Ubah akun (username / password)
-    document.getElementById('simpanAkun').addEventListener('click', async function() {
-        const uname = document.getElementById('settingUsername').value.trim();
-        const lama = document.getElementById('settingPassLama').value;
-        const baru = document.getElementById('settingPassBaru').value;
-        const konf = document.getElementById('settingPassKonfirm').value;
-
-        if (!uname) { alert('Username tidak boleh kosong'); return; }
-        if (!lama) { alert('Masukkan password lama untuk konfirmasi'); return; }
-
-        try {
-            const snap = await AUTH_DOC_REF.get();
-            const auth = snap.exists ? snap.data() : null;
-            if (!auth) { alert('Data akun tidak ditemukan'); return; }
-
-            const ok = await verifyPass(lama, auth.passwordHash || auth.password);
-            if (!ok) { alert('Password lama salah!'); return; }
-
-            let newHash = auth.passwordHash || auth.password;
-            if (baru || konf) {
-                if (baru.length < 6) { alert('Password baru minimal 6 karakter'); return; }
-                if (baru !== konf) { alert('Konfirmasi password tidak cocok'); return; }
-                newHash = await hashPass(baru);
-            }
-
-            await AUTH_DOC_REF.set({
-                username: uname,
-                passwordHash: newHash,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-
-            document.getElementById('settingPassLama').value = '';
-            document.getElementById('settingPassBaru').value = '';
-            document.getElementById('settingPassKonfirm').value = '';
-            alert('Akun berhasil diperbarui!\nGunakan username & password baru pada login berikutnya.');
-        } catch (err) {
-            alert('Gagal menyimpan akun: ' + err.message);
-        }
-    });
-
-    // ======================================================================
-    // INIT
-    // ======================================================================
-    if (GOFILE_API_TOKEN === 'YOUR_API_TOKEN_HERE') {
-        console.warn('⚠️ GoFile API token belum diatur. Silakan ganti GOFILE_API_TOKEN dengan token Anda.');
-    }
-
-    const now = new Date();
-    document.getElementById('filterTahun').value = now.getFullYear();
-    document.getElementById('inpTahunIuran').value = now.getFullYear();
-    document.getElementById('inpTglIuran').value = now.toISOString().split('T')[0];
-    document.getElementById('inpPelayananTanggal').value = now.toISOString().split('T')[0];
-
-    // Cek sesi login sebelum memulai aplikasi
-    if (hasValidSession()) {
-        hideLogin();
-        startApp();
-    } else {
-        showLogin();
-        setTimeout(function() {
-            const u = document.getElementById('loginUsername');
-            if (u) u.focus();
-        }, 150);
+        const onErr = (err) => console.warn('Snapshot listener:', err && err.code ? err.code : err);
+        keluargaRef.onSnapshot(() => { loadAllData(); }, onErr);
+        tamuRef.onSnapshot(() => { loadAllData(); }, onErr);
+        pelayananRef.onSnapshot(() => { loadAllData(); }, onErr);
+        informasiRef.onSnapshot(() => { loadAllData(); }, onErr);
+        iuranRef.onSnapshot(() => { loadAllData(); }, onErr);
+        settingsRef.onSnapshot(() => { loadAllData(); }, onErr);
     }
 </script>
 </body>
