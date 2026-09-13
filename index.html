@@ -46,8 +46,10 @@
     .login-field input:focus { outline: none; border-color: var(--gold); }
     .login-field .input-icon { position: absolute; left: 14px; top: 38px; color: var(--muted); font-size: 14px; }
     .login-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--gold), #d4a017); color: #111; border: none; border-radius: 12px; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
-    .login-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(240,185,11,0.3); }
-    .login-error { color: var(--accent); font-size: 12px; margin-top: 12px; display: none; }
+    .login-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(240,185,11,0.3); }
+    .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .login-error { color: var(--accent); font-size: 12px; margin-top: 12px; display: none; text-align: center; }
+    .login-hint { font-size: 11px; color: var(--muted); margin-top: 16px; text-align: center; line-height: 1.5; }
 
     #appScreen { display: none; }
     .header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; padding: 20px; border-bottom: 1px solid var(--border); background-color: var(--header-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 0 0 16px 16px; position: sticky; top: 0; z-index: 50; transition: background-color 0.4s ease, box-shadow 0.3s ease; }
@@ -72,6 +74,8 @@
     .theme-toggle:hover { border-color: var(--gold); color: var(--gold); }
     .btn-logout { background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; color: var(--muted); font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
     .btn-logout:hover { border-color: var(--accent); color: var(--accent); }
+    .user-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 100px; font-size: 11px; color: var(--muted); white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+    .user-chip i { color: var(--green); }
 
     .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; align-items: flex-start; justify-content: center; padding-top: 60px; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; overflow-y: auto; }
     .modal-overlay.active { opacity: 1; visibility: visible; }
@@ -176,7 +180,7 @@
 
     @media (max-width: 640px) {
       .header { flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
-      .header-actions { width: 100%; justify-content: flex-start; }
+      .header-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
       .header-text h1 { font-size: 18px; }
       .card-value { font-size: 17px !important; }
       .current-price-section { flex-direction: column; align-items: flex-start; }
@@ -198,21 +202,26 @@
       <p>Masuk ke sistem Kalkulasi Pembelian CRYPTO</p>
       <form id="loginForm" autocomplete="off" novalidate>
         <div class="login-field">
-          <label>Username</label>
+          <label>Username / Email</label>
           <i class="fas fa-user input-icon"></i>
-          <input type="text" id="loginUser" placeholder="Masukkan username" autocomplete="off" required />
+          <input type="text" id="loginUser" placeholder="Masukkan username atau email" autocomplete="username" required />
         </div>
         <div class="login-field">
           <label>Password</label>
           <i class="fas fa-lock input-icon"></i>
-          <input type="text" id="loginPass" class="secure-input" placeholder="Masukkan password" autocomplete="off" required />
+          <input type="password" id="loginPass" placeholder="Masukkan password" autocomplete="current-password" required />
         </div>
-        <button type="submit" class="login-btn"><i class="fas fa-sign-in-alt"></i> Masuk</button>
+        <button type="submit" class="login-btn" id="loginBtn">
+          <i class="fas fa-sign-in-alt"></i> Masuk
+        </button>
         <div class="login-error" id="loginError">Username atau password salah!</div>
+        <div class="login-hint">
+          Autentikasi via <strong>Firebase Authentication</strong>.<br />
+          Buat user baru di Firebase Console &rarr; Authentication &rarr; Users.
+        </div>
       </form>
     </div>
   </div>
-  <style>.secure-input { -webkit-text-security: disc; }</style>
 
   <div id="appScreen">
     <div class="container">
@@ -223,6 +232,10 @@
           <div class="live-clock"><span class="clock-dot"></span> <span id="liveClock">Memuat waktu...</span></div>
         </div>
         <div class="header-actions">
+          <div class="user-chip" id="userChip" title="">
+            <i class="fas fa-user-circle"></i>
+            <span id="userEmail">—</span>
+          </div>
           <div class="status-badge">
             <span class="status-dot" id="statusDot"></span>
             <span id="statusText">Memeriksa...</span>
@@ -269,7 +282,7 @@
           </table>
         </div>
       </section>
-      <footer class="footer">Data tersimpan di <a href="https://console.firebase.google.com/project/savedatabase-c936c/database/savedatabase-c936c-default-rtdb/data" target="_blank" rel="noopener">FIREBASE Realtime Database</a> &middot; Hosted on GitHub Pages</footer>
+      <footer class="footer">Data tersimpan di <a href="https://console.firebase.google.com/project/savedatabase-c936c/database/savedatabase-c936c-default-rtdb/data" target="_blank" rel="noopener">FIREBASE Realtime Database</a> &middot; Auth: <a href="https://console.firebase.google.com/project/savedatabase-c936c/authentication/users" target="_blank" rel="noopener">Firebase Authentication</a></footer>
     </div>
 
     <div class="modal-overlay" id="modalOverlay">
@@ -290,9 +303,10 @@
   </div>
 
   <!-- ============================================================
-       FIREBASE SDK (compat)
+       FIREBASE SDK (compat) — App, Auth, Database
        ============================================================ -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
   <script>
@@ -310,49 +324,115 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const auth = firebase.auth();
+    const db   = firebase.database();
 
-    // Path utama penyimpanan di Firebase
-    const TX_PATH   = 'transactions';   // data transaksi
-    const LOCK_PATH = 'locks';          // status kunci baris
-
+    // Path penyimpanan data di Firebase Realtime Database
+    const TX_PATH   = 'transactions';
+    const LOCK_PATH = 'locks';
     const txRef   = db.ref(TX_PATH);
     const lockRef = db.ref(LOCK_PATH);
 
+    // Domain yang dipakai jika user login pakai "username" saja (tanpa @)
+    const USER_EMAIL_DOMAIN = '@cryptoapp.local';
+
     /* ============================================================
-       AUTH CLIENT-SIDE
+       HELPER
        ============================================================ */
-    const VALID_USER = 'admin', VALID_PASS = 'admin123';
     const $ = id => document.getElementById(id);
     const loginScreen = $('loginScreen'), appScreen = $('appScreen');
 
-    function checkAuth() {
-      const isLogged = localStorage.getItem('doge_auth') === 'true';
-      if (isLogged) {
-        loginScreen.classList.add('hidden');
-        appScreen.style.display = 'block';
-        initApp();
-      } else {
-        loginScreen.classList.remove('hidden');
-        appScreen.style.display = 'none';
+    function usernameToEmail(input) {
+      const v = (input || '').trim();
+      if (!v) return '';
+      return v.includes('@') ? v : v + USER_EMAIL_DOMAIN;
+    }
+
+    function authErrorMessage(err) {
+      const code = err && err.code ? err.code : '';
+      switch (code) {
+        case 'auth/invalid-email':         return 'Format email tidak valid.';
+        case 'auth/user-not-found':        return 'User tidak terdaftar.';
+        case 'auth/wrong-password':        return 'Password salah.';
+        case 'auth/invalid-credential':    return 'Username / email atau password salah.';
+        case 'auth/invalid-login-credentials': return 'Username / email atau password salah.';
+        case 'auth/too-many-requests':     return 'Terlalu banyak percobaan. Coba lagi nanti.';
+        case 'auth/network-request-failed':return 'Koneksi jaringan bermasalah.';
+        case 'auth/user-disabled':         return 'Akun ini dinonaktifkan.';
+        case 'auth/missing-password':      return 'Password wajib diisi.';
+        default:                            return 'Login gagal: ' + (err && err.message ? err.message : code);
       }
     }
-    $('loginForm').addEventListener('submit', (e) => {
+
+    function toast(msg, type = 'info') {
+      const box = $('toastBox');
+      const el = document.createElement('div');
+      el.className = 'toast ' + type;
+      const ic = type === 'success' ? 'fa-check-circle'
+               : type === 'error' ? 'fa-exclamation-circle'
+               : type === 'warning' ? 'fa-exclamation-triangle'
+               : 'fa-info-circle';
+      el.innerHTML = '<i class="fas ' + ic + '"></i> ' + msg;
+      box.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(40px)';
+        el.style.transition = '0.3s';
+        setTimeout(() => el.remove(), 300);
+      }, 3500);
+    }
+
+    /* ============================================================
+       LOGIN FORM — Firebase Authentication (email/password)
+       ============================================================ */
+    $('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      if ($('loginUser').value === VALID_USER && $('loginPass').value === VALID_PASS) {
-        localStorage.setItem('doge_auth', 'true');
-        $('loginError').style.display = 'none';
-        checkAuth();
-      } else {
-        $('loginError').style.display = 'block';
+      const errEl  = $('loginError');
+      const btn    = $('loginBtn');
+      const rawUser= $('loginUser').value;
+      const pass   = $('loginPass').value;
+
+      errEl.style.display = 'none';
+
+      if (!rawUser || !pass) {
+        errEl.textContent = 'Username / email dan password wajib diisi.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      const email = usernameToEmail(rawUser);
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
+      try {
+        // Persist login antar refresh (default: LOCAL)
+        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        await auth.signInWithEmailAndPassword(email, pass);
+        // onAuthStateChanged akan otomatis menampilkan appScreen
+        toast('Login berhasil', 'success');
         $('loginPass').value = '';
+      } catch (err) {
+        console.error('Login error:', err);
+        errEl.textContent = authErrorMessage(err);
+        errEl.style.display = 'block';
+        $('loginPass').value = '';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Masuk';
       }
     });
-    $('btnLogout').addEventListener('click', () => {
-      localStorage.removeItem('doge_auth');
-      $('loginUser').value = '';
-      $('loginPass').value = '';
-      checkAuth();
+
+    /* ============================================================
+       LOGOUT
+       ============================================================ */
+    $('btnLogout').addEventListener('click', async () => {
+      try {
+        await auth.signOut();
+        toast('Berhasil logout', 'info');
+      } catch (e) {
+        toast('Gagal logout: ' + e.message, 'error');
+      }
     });
 
     /* ============================================================
@@ -362,6 +442,42 @@
     let lockedRows   = [];
     let listenerAttached = false;
     let lockListenerAttached = false;
+    let appInitialized = false;
+
+    /* ============================================================
+       AUTH STATE LISTENER
+       ============================================================ */
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // Sudah login → tampilkan aplikasi
+        loginScreen.classList.add('hidden');
+        appScreen.style.display = 'block';
+
+        const label = user.email || user.uid;
+        $('userEmail').textContent = label;
+        $('userChip').title = 'Login sebagai: ' + label;
+
+        initApp();
+      } else {
+        // Belum login / logout → tampilkan login screen
+        loginScreen.classList.remove('hidden');
+        appScreen.style.display = 'none';
+        $('userEmail').textContent = '—';
+
+        // Reset state & detach listener
+        detachListeners();
+        transactions = [];
+        lockedRows   = [];
+        appInitialized = false;
+      }
+    });
+
+    function detachListeners() {
+      try { txRef.off(); } catch (e) {}
+      try { lockRef.off(); } catch (e) {}
+      listenerAttached = false;
+      lockListenerAttached = false;
+    }
 
     /* ============================================================
        THEME
@@ -438,23 +554,6 @@
       if (curPrice < buyPrice) return '<span class="trend-icon trend-down"><i class="fas fa-caret-down"></i></span>';
       return '<span class="trend-icon trend-flat"><i class="fas fa-minus"></i></span>';
     }
-    function toast(msg, type = 'info') {
-      const box = $('toastBox');
-      const el = document.createElement('div');
-      el.className = 'toast ' + type;
-      const ic = type === 'success' ? 'fa-check-circle'
-               : type === 'error' ? 'fa-exclamation-circle'
-               : type === 'warning' ? 'fa-exclamation-triangle'
-               : 'fa-info-circle';
-      el.innerHTML = '<i class="fas ' + ic + '"></i> ' + msg;
-      box.appendChild(el);
-      setTimeout(() => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateX(40px)';
-        el.style.transition = '0.3s';
-        setTimeout(() => el.remove(), 300);
-      }, 3500);
-    }
 
     /* ============================================================
        KONEKSI FIREBASE
@@ -479,7 +578,7 @@
     }
 
     /* ============================================================
-       REALTIME LISTENER – DATA TRANSAKSI
+       REALTIME LISTENER — TRANSAKSI
        ============================================================ */
     function attachRealtimeListener() {
       if (listenerAttached) return;
@@ -491,20 +590,18 @@
           .map(k => Object.assign({ id: k }, val[k]))
           .sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
 
-        // Cache lokal (hanya sebagai backup tampilan offline)
         localStorage.setItem('doge_tx', JSON.stringify(transactions));
-
         render(); calc();
       }, (err) => {
         console.warn('Firebase read error:', err);
-        toast('Gagal membaca Firebase. Menampilkan cache lokal.', 'warning');
+        toast('Gagal membaca Firebase: ' + (err.message || ''), 'warning');
         transactions = JSON.parse(localStorage.getItem('doge_tx') || '[]');
         render(); calc();
       });
     }
 
     /* ============================================================
-       REALTIME LISTENER – STATUS KUNCI
+       REALTIME LISTENER — KUNCI
        ============================================================ */
     function syncLocks() {
       if (lockListenerAttached) return;
@@ -518,9 +615,10 @@
     }
 
     /* ============================================================
-       CRUD FIREBASE
+       CRUD
        ============================================================ */
     async function addTx(tx) {
+      const user = auth.currentUser;
       const payload = {
         coin: tx.coin,
         tanggal: tx.tanggal,
@@ -528,7 +626,8 @@
         total: Number(tx.total),
         jumlah: tx.harga > 0 ? Number(tx.total) / Number(tx.harga) : 0,
         timestamp: Date.now(),
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        createdBy: user ? (user.email || user.uid) : 'unknown'
       };
 
       try {
@@ -538,7 +637,7 @@
         return true;
       } catch (e) {
         console.error('❌ Gagal simpan ke Firebase:', e);
-        toast('GAGAL simpan ke Firebase: ' + (e.message || 'periksa koneksi'), 'error');
+        toast('GAGAL simpan ke Firebase: ' + (e.message || 'periksa rules'), 'error');
         return false;
       }
     }
@@ -550,13 +649,10 @@
         toast('Transaksi dihapus dari Firebase', 'success');
       } catch (e) {
         console.error('Gagal hapus:', e);
-        toast('Gagal hapus dari Firebase: ' + (e.message || 'periksa koneksi'), 'error');
+        toast('Gagal hapus: ' + (e.message || ''), 'error');
       }
     }
 
-    /* ============================================================
-       LOCK
-       ============================================================ */
     function toggleLock(id) {
       const isLocked = lockedRows.includes(id);
       if (isLocked) {
@@ -571,7 +667,7 @@
     }
 
     /* ============================================================
-       RENDER TABEL
+       RENDER
        ============================================================ */
     function render() {
       const tbody = $('tBody');
@@ -658,6 +754,8 @@
        SIMPAN TRANSAKSI
        ============================================================ */
     $('btnAdd').addEventListener('click', async () => {
+      if (!auth.currentUser) { toast('Sesi habis, silakan login ulang', 'error'); return; }
+
       const coin = $('inCoin').value;
       const tanggalInput = $('inDate').value;
       const tanggalFinal = tanggalInput + ' ' + new Date().toTimeString().slice(0, 5);
@@ -670,7 +768,7 @@
 
       const btn = $('btnAdd');
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan ke Firebase...';
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
 
       const ok = await addTx({ coin, tanggal: tanggalFinal, harga, total });
       if (ok) closeModal(true);
@@ -693,6 +791,8 @@
        ============================================================ */
     function initParticles() {
       const c = $('particles');
+      if (c.dataset.init === '1') return;
+      c.dataset.init = '1';
       const colors = ['rgba(233,69,96,0.3)', 'rgba(240,185,11,0.25)', 'rgba(0,214,143,0.2)'];
       for (let i = 0; i < 18; i++) {
         const p = document.createElement('div');
@@ -723,17 +823,18 @@
     setInterval(updateClock, 1000);
 
     /* ============================================================
-       INIT
+       INIT APP (setelah user login)
        ============================================================ */
     async function initApp() {
+      if (appInitialized) return;
+      appInitialized = true;
+
       initParticles();
       updateClock();
       await checkConn();
-      attachRealtimeListener();  // sinkron realtime data transaksi
-      syncLocks();               // sinkron realtime status kunci
+      attachRealtimeListener();
+      syncLocks();
     }
-
-    checkAuth();
   </script>
 </body>
 </html>
