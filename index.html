@@ -6,7 +6,6 @@
   <title>Kalkulasi Pembelian CRYPTO</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-
   <style>
     :root {
       --bg: #0b0e14; --bg2: #111621; --card: #151b28; --card2: #1a2233;
@@ -61,7 +60,6 @@
     .header-text { cursor: default; user-select: none; flex: 1; }
     .header-text h1 { font-size: 22px; font-weight: 700; background: linear-gradient(90deg, var(--fg), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 
-    /* Live Clock Style */
     .live-clock { color: var(--green); font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
     .clock-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: blink 1s infinite; }
     @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
@@ -222,7 +220,6 @@
         <div class="coin-icon"><i class="fas fa-cubes"></i></div>
         <div class="header-text" id="headerText">
           <h1>Kalkulasi Pembelian CRYPTO</h1>
-          <!-- Jam Hidup (Live Clock) -->
           <div class="live-clock"><span class="clock-dot"></span> <span id="liveClock">Memuat waktu...</span></div>
         </div>
         <div class="header-actions">
@@ -272,7 +269,7 @@
           </table>
         </div>
       </section>
-      <footer class="footer">Data tersimpan di <a href="https://console.firebase.google.com/project/savedatabase-c936c/database" target="_blank" rel="noopener">FIREBASE Realtime Database</a> &middot; Hosted on GitHub Pages</footer>
+      <footer class="footer">Data tersimpan di <a href="https://console.firebase.google.com/project/savedatabase-c936c/database/savedatabase-c936c-default-rtdb/data" target="_blank" rel="noopener">FIREBASE Realtime Database</a> &middot; Hosted on GitHub Pages</footer>
     </div>
 
     <div class="modal-overlay" id="modalOverlay">
@@ -292,7 +289,9 @@
     </div>
   </div>
 
-  <!-- ============ FIREBASE SDK (compat) ============ -->
+  <!-- ============================================================
+       FIREBASE SDK (compat)
+       ============================================================ -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
@@ -312,11 +311,16 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const txRef = db.ref('transactions');   // node utama penyimpanan transaksi
-    const lockRef = db.ref('locks');        // node untuk status kunci baris
+
+    // Path utama penyimpanan di Firebase
+    const TX_PATH   = 'transactions';   // data transaksi
+    const LOCK_PATH = 'locks';          // status kunci baris
+
+    const txRef   = db.ref(TX_PATH);
+    const lockRef = db.ref(LOCK_PATH);
 
     /* ============================================================
-       AUTH SEDERHANA (client-side)
+       AUTH CLIENT-SIDE
        ============================================================ */
     const VALID_USER = 'admin', VALID_PASS = 'admin123';
     const $ = id => document.getElementById(id);
@@ -354,9 +358,10 @@
     /* ============================================================
        STATE
        ============================================================ */
-    let transactions = JSON.parse(localStorage.getItem('doge_tx') || '[]');
-    let lockedRows = JSON.parse(localStorage.getItem('doge_locks') || '[]');
+    let transactions = [];
+    let lockedRows   = [];
     let listenerAttached = false;
+    let lockListenerAttached = false;
 
     /* ============================================================
        THEME
@@ -382,12 +387,10 @@
        ============================================================ */
     const modalOverlay = $('modalOverlay'), modalClose = $('modalClose'), btnOpenModal = $('btnOpenModal');
     function isFormDirty() { return $('inPrice').value || $('inTotal').value; }
-
     function getTodayLocal() {
       const d = new Date();
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
-
     function openModal() {
       modalOverlay.classList.add('active');
       $('inDate').value = getTodayLocal();
@@ -416,7 +419,7 @@
     });
 
     /* ============================================================
-       HELPER FORMAT
+       FORMATTER
        ============================================================ */
     function fRp(n) {
       if (n == null || isNaN(n)) return 'Rp 0';
@@ -454,7 +457,7 @@
     }
 
     /* ============================================================
-       KONEKSI & REALTIME LISTENER (FIREBASE)
+       KONEKSI FIREBASE
        ============================================================ */
     async function checkConn() {
       const dot = $('statusDot'), txt = $('statusText');
@@ -475,6 +478,9 @@
       }
     }
 
+    /* ============================================================
+       REALTIME LISTENER – DATA TRANSAKSI
+       ============================================================ */
     function attachRealtimeListener() {
       if (listenerAttached) return;
       listenerAttached = true;
@@ -485,28 +491,30 @@
           .map(k => Object.assign({ id: k }, val[k]))
           .sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
 
+        // Cache lokal (hanya sebagai backup tampilan offline)
         localStorage.setItem('doge_tx', JSON.stringify(transactions));
+
         render(); calc();
       }, (err) => {
-        console.warn('Realtime listener error:', err);
-        toast('Gagal membaca Firebase. Menampilkan data lokal.', 'warning');
+        console.warn('Firebase read error:', err);
+        toast('Gagal membaca Firebase. Menampilkan cache lokal.', 'warning');
         transactions = JSON.parse(localStorage.getItem('doge_tx') || '[]');
         render(); calc();
       });
     }
 
-    async function fetchData() {
-      try {
-        const snap = await txRef.once('value');
+    /* ============================================================
+       REALTIME LISTENER – STATUS KUNCI
+       ============================================================ */
+    function syncLocks() {
+      if (lockListenerAttached) return;
+      lockListenerAttached = true;
+      lockRef.on('value', (snap) => {
         const val = snap.val() || {};
-        transactions = Object.keys(val)
-          .map(k => Object.assign({ id: k }, val[k]))
-          .sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
-        localStorage.setItem('doge_tx', JSON.stringify(transactions));
-      } catch (e) {
-        transactions = JSON.parse(localStorage.getItem('doge_tx') || '[]');
-      }
-      render(); calc();
+        lockedRows = Object.keys(val);
+        localStorage.setItem('doge_locks', JSON.stringify(lockedRows));
+        render();
+      }, () => {});
     }
 
     /* ============================================================
@@ -524,61 +532,46 @@
       };
 
       try {
-        await txRef.push(payload);
-        toast('Transaksi berhasil disimpan ke Firebase', 'success');
+        const newRef = await txRef.push(payload);
+        console.log('✅ Tersimpan di Firebase:', TX_PATH + '/' + newRef.key);
+        toast('Transaksi tersimpan di Firebase', 'success');
         return true;
       } catch (e) {
-        // Fallback offline
-        payload.id = 'TX-' + Date.now().toString(36).toUpperCase();
-        transactions.push(payload);
-        localStorage.setItem('doge_tx', JSON.stringify(transactions));
-        toast('Gagal ke Firebase — disimpan lokal', 'error');
-        render(); calc();
-        return true;
+        console.error('❌ Gagal simpan ke Firebase:', e);
+        toast('GAGAL simpan ke Firebase: ' + (e.message || 'periksa koneksi'), 'error');
+        return false;
       }
     }
 
     async function delTx(id) {
       if (lockedRows.includes(id)) { toast('Transaksi terkunci!', 'warning'); return; }
       try {
-        await db.ref('transactions/' + id).remove();
-        toast('Transaksi dihapus', 'success');
+        await db.ref(TX_PATH + '/' + id).remove();
+        toast('Transaksi dihapus dari Firebase', 'success');
       } catch (e) {
-        transactions = transactions.filter(t => t.id !== id);
-        localStorage.setItem('doge_tx', JSON.stringify(transactions));
-        toast('Gagal hapus di Firebase — dihapus lokal', 'info');
-        render(); calc();
+        console.error('Gagal hapus:', e);
+        toast('Gagal hapus dari Firebase: ' + (e.message || 'periksa koneksi'), 'error');
       }
     }
 
     /* ============================================================
-       LOCK (disimpan di Firebase + cache lokal)
+       LOCK
        ============================================================ */
     function toggleLock(id) {
-      if (lockedRows.includes(id)) {
-        lockedRows = lockedRows.filter(i => i !== id);
-        toast('Kunci dibuka', 'info');
-        lockRef.child(id).remove().catch(() => {});
+      const isLocked = lockedRows.includes(id);
+      if (isLocked) {
+        lockRef.child(id).remove()
+          .then(() => toast('Kunci dibuka', 'info'))
+          .catch(e => toast('Gagal buka kunci: ' + e.message, 'error'));
       } else {
-        lockedRows.push(id);
-        toast('Transaksi dikunci', 'success');
-        lockRef.child(id).set(true).catch(() => {});
+        lockRef.child(id).set(true)
+          .then(() => toast('Transaksi dikunci', 'success'))
+          .catch(e => toast('Gagal kunci: ' + e.message, 'error'));
       }
-      localStorage.setItem('doge_locks', JSON.stringify(lockedRows));
-      render();
-    }
-
-    function syncLocks() {
-      lockRef.on('value', (snap) => {
-        const val = snap.val() || {};
-        lockedRows = Object.keys(val);
-        localStorage.setItem('doge_locks', JSON.stringify(lockedRows));
-        render();
-      }, () => {});
     }
 
     /* ============================================================
-       RENDER
+       RENDER TABEL
        ============================================================ */
     function render() {
       const tbody = $('tBody');
@@ -662,7 +655,7 @@
     }
 
     /* ============================================================
-       EVENT: SIMPAN TRANSAKSI
+       SIMPAN TRANSAKSI
        ============================================================ */
     $('btnAdd').addEventListener('click', async () => {
       const coin = $('inCoin').value;
@@ -677,7 +670,7 @@
 
       const btn = $('btnAdd');
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan ke Firebase...';
 
       const ok = await addTx({ coin, tanggal: tanggalFinal, harga, total });
       if (ok) closeModal(true);
@@ -736,9 +729,8 @@
       initParticles();
       updateClock();
       await checkConn();
-      attachRealtimeListener();   // sinkronisasi realtime antar device
-      syncLocks();
-      await fetchData();
+      attachRealtimeListener();  // sinkron realtime data transaksi
+      syncLocks();               // sinkron realtime status kunci
     }
 
     checkAuth();
