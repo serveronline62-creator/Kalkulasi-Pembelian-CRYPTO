@@ -6,7 +6,6 @@
   <title>Kalkulasi Pembelian CRYPTO</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
   <style>
@@ -92,35 +91,45 @@
     .chart-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 1.5s infinite; }
     .chart-status .dot.off { background: var(--accent); animation: none; }
 
-    .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; align-items: flex-start; justify-content: center; padding-top: 60px; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; overflow-y: auto; }
-    .modal-overlay.active { opacity: 1; visibility: visible; }
-    .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 32px; width: 90%; max-width: 500px; transform: translateY(-50px) scale(0.95); transition: transform 0.3s ease; box-shadow: 0 20px 50px var(--shadow); }
-    .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
-    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-    .modal-header h2 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
-    .modal-header h2 i { color: var(--accent); }
-    .modal-close { background: var(--bg2); border: 1px solid var(--border); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); font-size: 14px; transition: all 0.2s; }
-    .modal-close:hover { color: var(--accent); border-color: var(--accent); }
-
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
-    .form-group label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-    .form-group input, .form-group select { width: 100%; padding: 11px 14px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; color: var(--fg); font-family: 'JetBrains Mono', monospace; font-size: 14px; transition: border-color 0.2s; }
-    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(233,69,96,0.15); }
-    .form-group select option { background: var(--card); color: var(--fg); }
-    .btn-submit-form { margin-top: 20px; width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent), #c23152); color: #fff; border: none; border-radius: 12px; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.15s; }
-    .btn-submit-form:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(233,69,96,0.3); }
-    .btn-submit-form:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-    .add-tx-section { margin-bottom: 16px; }
-    .btn-add-inline { width: 100%; padding: 16px; background: var(--card); border: 1px dashed var(--border); border-radius: 14px; color: var(--muted); font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; }
-    .btn-add-inline i { color: var(--accent); }
-    .btn-add-inline:hover { background: var(--card2); border-color: var(--accent); color: var(--fg); border-style: solid; }
-
-    .current-price-section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    /* ============ CURRENT PRICE (AUTO/MANUAL) ============ */
+    .current-price-section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; }
+    .current-price-section .cp-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .current-price-section label { font-size: 14px; font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
     .current-price-section label i { color: var(--green); }
-    .current-price-section input { flex: 1; min-width: 160px; padding: 10px 14px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; color: var(--fg); font-family: 'JetBrains Mono', monospace; font-size: 14px; }
-    .current-price-section input:focus { outline: none; border-color: var(--green); }
+    .price-input-wrapper { flex: 1; min-width: 200px; position: relative; display: flex; align-items: center; gap: 8px; }
+    .price-input-wrapper input { width: 100%; padding: 10px 14px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; color: var(--fg); font-family: 'JetBrains Mono', monospace; font-size: 14px; transition: border-color 0.2s, background 0.3s; }
+    .price-input-wrapper input:focus { outline: none; border-color: var(--green); }
+    .price-input-wrapper.auto input { border-color: var(--green); background: rgba(0,214,143,0.06); }
+    .price-input-wrapper.manual input { border-color: var(--gold); background: rgba(240,185,11,0.06); }
+
+    .price-mode-badge {
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      border: 1px solid;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.2s;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .price-mode-badge.auto { color: var(--green); border-color: var(--green); background: rgba(0,214,143,0.1); }
+    .price-mode-badge.manual { color: var(--gold); border-color: var(--gold); background: rgba(240,185,11,0.1); }
+    .price-mode-badge:hover { transform: translateY(-1px); }
+    .price-mode-badge i { animation: spinSlow 3s linear infinite; }
+    .price-mode-badge.manual i { animation: none; }
+    @keyframes spinSlow { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+    .cp-hint { font-size: 11px; color: var(--muted); margin-top: 10px; display: flex; align-items: center; gap: 6px; }
+    .cp-hint i { color: var(--muted); }
+    .cp-hint.auto i { color: var(--green); }
+    .cp-hint.manual i { color: var(--gold); }
 
     .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; position: relative; overflow: hidden; transition: background 0.3s, border-color 0.3s, transform 0.2s; }
@@ -198,8 +207,8 @@
       .header-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
       .header-text h1 { font-size: 18px; }
       .card-value { font-size: 17px !important; }
-      .current-price-section { flex-direction: column; align-items: flex-start; }
-      .current-price-section input { width: 100%; }
+      .current-price-section .cp-row { flex-direction: column; align-items: stretch; }
+      .price-input-wrapper { width: 100%; }
       .chart-wrapper { height: 180px; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
@@ -261,7 +270,7 @@
         </div>
       </header>
 
-      <!-- ============ GRAFIK HARGA REAL-TIME ============ -->
+      <!-- ============ GRAFIK HARGA ============ -->
       <section class="chart-section">
         <div class="chart-header">
           <div class="chart-title"><i class="fas fa-chart-area"></i> Grafik Harga DOGE / IDR</div>
@@ -284,9 +293,21 @@
         <button class="btn-add-inline" id="btnOpenModal"><i class="fas fa-plus-circle"></i> Tambah Transaksi Baru</button>
       </div>
 
+      <!-- ============ HARGA SAAT INI (AUTO/MANUAL) ============ -->
       <section class="current-price-section">
-        <label><i class="fas fa-chart-line"></i> Harga Saat Ini (Rp)</label>
-        <input type="number" id="curPrice" placeholder="Masukkan harga terkini" min="0" step="any" />
+        <div class="cp-row">
+          <label><i class="fas fa-chart-line"></i> Harga Saat Ini (Rp)</label>
+          <div class="price-input-wrapper auto" id="priceInputWrapper">
+            <input type="number" id="curPrice" placeholder="Menunggu harga dari grafik..." min="0" step="any" />
+            <button class="price-mode-badge auto" id="priceModeBadge" title="Klik untuk ganti mode AUTO / MANUAL">
+              <i class="fas fa-sync-alt"></i> <span id="priceModeText">AUTO</span>
+            </button>
+          </div>
+        </div>
+        <div class="cp-hint auto" id="cpHint">
+          <i class="fas fa-info-circle"></i>
+          <span id="cpHintText">Harga diambil otomatis dari grafik & diperbarui setiap 30 detik.</span>
+        </div>
       </section>
 
       <div class="summary-grid">
@@ -491,6 +512,7 @@
         $('userEmail').textContent = '—';
 
         detachListeners();
+        stopPriceChart();
         transactions = [];
         lockedRows   = [];
         appInitialized = false;
@@ -535,6 +557,9 @@
     function openModal() {
       modalOverlay.classList.add('active');
       $('inDate').value = getTodayLocal();
+      // Isi otomatis harga satuan dari harga saat ini (kalau ada & masih kosong)
+      const cp = parseFloat($('curPrice').value);
+      if (cp > 0 && !$('inPrice').value) $('inPrice').value = Math.round(cp);
     }
     function closeModal(force = false) {
       if (!force && isFormDirty()) {
@@ -581,11 +606,73 @@
     }
 
     /* ============================================================
-       GRAFIK REAL-TIME — CoinGecko + Chart.js
+       MODE HARGA: AUTO / MANUAL
+       ============================================================ */
+    // true = ikuti grafik otomatis, false = input manual
+    let autoPriceMode = localStorage.getItem('price_auto_mode') !== 'false';
+    let isAutoUpdating = false;   // guard supaya input event dari auto-update tidak dianggap manual
+
+    function applyPriceModeUI() {
+      const wrap = $('priceInputWrapper');
+      const badge = $('priceModeBadge');
+      const text  = $('priceModeText');
+      const hint  = $('cpHint');
+      const hintText = $('cpHintText');
+
+      if (autoPriceMode) {
+        wrap.classList.add('auto'); wrap.classList.remove('manual');
+        badge.classList.add('auto'); badge.classList.remove('manual');
+        text.textContent = 'AUTO';
+        hint.classList.add('auto'); hint.classList.remove('manual');
+        hintText.textContent = 'Harga diambil otomatis dari grafik & diperbarui setiap 30 detik.';
+      } else {
+        wrap.classList.add('manual'); wrap.classList.remove('auto');
+        badge.classList.add('manual'); badge.classList.remove('auto');
+        text.textContent = 'MANUAL';
+        hint.classList.add('manual'); hint.classList.remove('auto');
+        hintText.textContent = 'Mode MANUAL — kamu mengisi harga sendiri. Klik badge untuk kembali ke AUTO.';
+      }
+    }
+
+    // Toggle badge AUTO <-> MANUAL
+    $('priceModeBadge').addEventListener('click', () => {
+      autoPriceMode = !autoPriceMode;
+      localStorage.setItem('price_auto_mode', autoPriceMode ? 'true' : 'false');
+      applyPriceModeUI();
+
+      if (autoPriceMode) {
+        toast('Mode AUTO aktif — harga mengikuti grafik', 'success');
+        // Langsung tarik harga terbaru
+        if (lastPrice != null) {
+          isAutoUpdating = true;
+          $('curPrice').value = Math.round(lastPrice);
+          isAutoUpdating = false;
+          calc();
+        } else {
+          fetchDogecoinPrice();
+        }
+      } else {
+        toast('Mode MANUAL aktif — kamu bisa isi harga sendiri', 'info');
+      }
+    });
+
+    // Deteksi user mengetik manual → otomatis pindah ke MANUAL
+    $('curPrice').addEventListener('input', () => {
+      if (isAutoUpdating) return;
+      if (autoPriceMode) {
+        autoPriceMode = false;
+        localStorage.setItem('price_auto_mode', 'false');
+        applyPriceModeUI();
+        toast('Beralih ke mode MANUAL', 'info');
+      }
+    });
+
+    /* ============================================================
+       GRAFIK REAL-TIME — CoinGecko
        ============================================================ */
     const COINGECKO_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=dogecoin&vs_currencies=idr&include_24hr_change=true';
-    const MAX_DATA_POINTS = 60;          // ~30 menit (interval 30 detik)
-    const REFRESH_INTERVAL = 30000;      // 30 detik
+    const MAX_DATA_POINTS = 60;
+    const REFRESH_INTERVAL = 30000;
 
     let priceChart = null;
     let chartLabels = [];
@@ -675,44 +762,45 @@
         const price = doge.idr;
         const change24h = typeof doge.idr_24h_change === 'number' ? doge.idr_24h_change : 0;
 
-        // Update label harga
+        // Update label harga besar
         $('chartPriceLabel').textContent = fRp(price);
         const changeEl = $('chartChangeLabel');
         const isUp = change24h >= 0;
-        changeEl.textContent = (isUp ? '+' : '') + change24h.toFixed(2) + '%';
         changeEl.style.color = isUp ? 'var(--green)' : 'var(--accent)';
         changeEl.innerHTML = (isUp ? '+' : '') + change24h.toFixed(2) + '% ' +
           (isUp ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>');
 
-        // Update status
+        // Status
         statusEl.textContent = 'Diperbarui ' + new Date().toLocaleTimeString('id-ID');
         dotEl.classList.remove('off');
 
-        // Simpan histori untuk grafik
+        // Simpan histori grafik
         const now = new Date();
         const label = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         chartLabels.push(label);
         chartData.push(price);
-
-        // Batasi jumlah titik data
         while (chartLabels.length > MAX_DATA_POINTS) {
           chartLabels.shift();
           chartData.shift();
         }
-
-        // Update chart
-        if (priceChart) {
-          priceChart.update('none');
-        }
-
-        // Auto-isi ke input "Harga Saat Ini" jika masih kosong
-        const curPriceInput = $('curPrice');
-        if (!curPriceInput.value || curPriceInput.value === '0') {
-          curPriceInput.value = Math.round(price);
-          calc();
-        }
+        if (priceChart) priceChart.update('none');
 
         lastPrice = price;
+
+        // ============================================================
+        // ⭐ AUTO-SYNC KE KOLOM "HARGA SAAT INI"
+        // ============================================================
+        if (autoPriceMode) {
+          const curPriceInput = $('curPrice');
+          const newVal = String(Math.round(price));
+          if (curPriceInput.value !== newVal) {
+            isAutoUpdating = true;         // tanda: ini update dari kode, bukan user
+            curPriceInput.value = newVal;
+            isAutoUpdating = false;
+            calc();                        // langsung hitung ulang P/L & trend
+          }
+        }
+
         return price;
       } catch (err) {
         console.warn('Gagal ambil harga DOGE:', err);
@@ -723,7 +811,7 @@
     }
 
     function startPriceChart() {
-      if (priceChart) return; // sudah jalan
+      if (priceChart) return;
       initChart();
       fetchDogecoinPrice();
       chartFetchTimer = setInterval(fetchDogecoinPrice, REFRESH_INTERVAL);
@@ -736,7 +824,6 @@
       }
     }
 
-    /* Re-init chart saat tema berubah supaya warna grid ikut menyesuaikan */
     themeToggle.addEventListener('click', () => {
       setTimeout(() => {
         if (priceChart) {
@@ -971,8 +1058,6 @@
       delTx(id);
     }
 
-    $('curPrice').addEventListener('input', calc);
-
     /* ============================================================
        PARTICLES + CLOCK
        ============================================================ */
@@ -1016,18 +1101,14 @@
       if (appInitialized) return;
       appInitialized = true;
 
+      applyPriceModeUI();          // ⬅️ tampilkan badge AUTO/MANUAL sesuai preferensi tersimpan
       initParticles();
       updateClock();
-      startPriceChart();           // ⬅️ mulai grafik real-time
+      startPriceChart();
       await checkConn();
       attachRealtimeListener();
       syncLocks();
     }
-
-    /* Stop chart saat logout supaya tidak ada request sia-sia */
-    auth.onAuthStateChanged((user) => {
-      if (!user) stopPriceChart();
-    });
   </script>
 </body>
 </html>
