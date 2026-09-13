@@ -79,7 +79,7 @@
     .user-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 100px; font-size: 11px; color: var(--muted); white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
     .user-chip i { color: var(--green); }
 
-    /* ============ CHART SECTION ============ */
+    /* ============ CHART ============ */
     .chart-section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; }
     .chart-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
     .chart-title { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
@@ -91,7 +91,7 @@
     .chart-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 1.5s infinite; }
     .chart-status .dot.off { background: var(--accent); animation: none; }
 
-    /* ============ CURRENT PRICE (AUTO/MANUAL) ============ */
+    /* ============ CURRENT PRICE ============ */
     .current-price-section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; }
     .current-price-section .cp-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .current-price-section label { font-size: 14px; font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
@@ -102,23 +102,7 @@
     .price-input-wrapper.auto input { border-color: var(--green); background: rgba(0,214,143,0.06); }
     .price-input-wrapper.manual input { border-color: var(--gold); background: rgba(240,185,11,0.06); }
 
-    .price-mode-badge {
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      border: 1px solid;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      transition: all 0.2s;
-      user-select: none;
-      flex-shrink: 0;
-    }
+    .price-mode-badge { padding: 8px 14px; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; border: 1px solid; display: flex; align-items: center; gap: 6px; white-space: nowrap; transition: all 0.2s; user-select: none; flex-shrink: 0; }
     .price-mode-badge.auto { color: var(--green); border-color: var(--green); background: rgba(0,214,143,0.1); }
     .price-mode-badge.manual { color: var(--gold); border-color: var(--gold); background: rgba(240,185,11,0.1); }
     .price-mode-badge:hover { transform: translateY(-1px); }
@@ -202,6 +186,40 @@
     .footer { text-align: center; padding: 24px 0; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); }
     .footer a { color: var(--gold); text-decoration: none; }
 
+    /* ============ MODAL — DIPERBAIKI ============ */
+    .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; align-items: flex-start; justify-content: center; padding: 60px 16px 40px; opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s ease; overflow-y: auto; }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 28px 32px 32px; width: 100%; max-width: 520px; transform: translateY(-30px) scale(0.96); transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1); box-shadow: 0 20px 50px var(--shadow); margin: auto 0; }
+    .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+    .modal-header h2 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+    .modal-header h2 i { color: var(--accent); }
+    .modal-close { background: var(--bg2); border: 1px solid var(--border); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); font-size: 14px; transition: all 0.2s; flex-shrink: 0; }
+    .modal-close:hover { color: var(--accent); border-color: var(--accent); transform: rotate(90deg); }
+
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+    .form-group label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group label .req { color: var(--accent); margin-left: 2px; }
+    .form-group input, .form-group select { width: 100%; padding: 11px 14px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; color: var(--fg); font-family: 'JetBrains Mono', monospace; font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(233,69,96,0.15); }
+    .form-group input.invalid { border-color: var(--accent); background: rgba(233,69,96,0.08); }
+    .form-group select option { background: var(--card); color: var(--fg); }
+
+    /* Preview jumlah koin */
+    .coin-preview { margin-top: 16px; padding: 12px 16px; background: var(--card2); border: 1px dashed var(--border); border-radius: 10px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .coin-preview .cp-label { color: var(--muted); display: flex; align-items: center; gap: 8px; font-family: 'Space Grotesk', sans-serif; }
+    .coin-preview .cp-label i { color: var(--gold); }
+    .coin-preview .cp-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--green); font-size: 15px; }
+
+    .btn-submit-form { margin-top: 20px; width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent), #c23152); color: #fff; border: none; border-radius: 12px; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.15s, box-shadow 0.15s; }
+    .btn-submit-form:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(233,69,96,0.3); }
+    .btn-submit-form:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .add-tx-section { margin-bottom: 16px; }
+    .btn-add-inline { width: 100%; padding: 16px; background: var(--card); border: 1px dashed var(--border); border-radius: 14px; color: var(--muted); font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; }
+    .btn-add-inline i { color: var(--accent); }
+    .btn-add-inline:hover { background: var(--card2); border-color: var(--accent); color: var(--fg); border-style: solid; transform: translateY(-1px); }
+
     @media (max-width: 640px) {
       .header { flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
       .header-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
@@ -210,6 +228,7 @@
       .current-price-section .cp-row { flex-direction: column; align-items: stretch; }
       .price-input-wrapper { width: 100%; }
       .chart-wrapper { height: 180px; }
+      .modal-content { padding: 24px 20px; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
   </style>
@@ -270,7 +289,6 @@
         </div>
       </header>
 
-      <!-- ============ GRAFIK HARGA ============ -->
       <section class="chart-section">
         <div class="chart-header">
           <div class="chart-title"><i class="fas fa-chart-area"></i> Grafik Harga DOGE / IDR</div>
@@ -293,7 +311,6 @@
         <button class="btn-add-inline" id="btnOpenModal"><i class="fas fa-plus-circle"></i> Tambah Transaksi Baru</button>
       </div>
 
-      <!-- ============ HARGA SAAT INI (AUTO/MANUAL) ============ -->
       <section class="current-price-section">
         <div class="cp-row">
           <label><i class="fas fa-chart-line"></i> Harga Saat Ini (Rp)</label>
@@ -341,19 +358,50 @@
       <footer class="footer">Data tersimpan di <a href="https://console.firebase.google.com/project/savedatabase-c936c/database/savedatabase-c936c-default-rtdb/data" target="_blank" rel="noopener">FIREBASE Realtime Database</a> &middot; Auth: <a href="https://console.firebase.google.com/project/savedatabase-c936c/authentication/users" target="_blank" rel="noopener">Firebase Authentication</a> &middot; Grafik: CoinGecko</footer>
     </div>
 
-    <div class="modal-overlay" id="modalOverlay">
-      <div class="modal-content">
+    <!-- ============ MODAL TAMBAH TRANSAKSI (DIPERBAIKI) ============ -->
+    <div class="modal-overlay" id="modalOverlay" aria-hidden="true">
+      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-header">
-          <h2><i class="fas fa-plus-circle"></i> Tambah Transaksi</h2>
-          <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+          <h2 id="modalTitle"><i class="fas fa-plus-circle"></i> Tambah Transaksi</h2>
+          <button class="modal-close" id="modalClose" type="button" title="Tutup (Esc)"><i class="fas fa-times"></i></button>
         </div>
-        <div class="form-grid">
-          <div class="form-group"><label for="inCoin">Coin</label><select id="inCoin"><option value="DOGE" selected>DOGE</option><option value="BTC">BTC</option><option value="ETH">ETH</option><option value="SOL">SOL</option><option value="XRP">XRP</option><option value="ADA">ADA</option></select></div>
-          <div class="form-group"><label for="inDate">Tanggal Beli</label><input type="date" id="inDate" /></div>
-          <div class="form-group"><label for="inPrice">Harga Satuan (Rp)</label><input type="number" id="inPrice" placeholder="0" min="0" step="any" /></div>
-          <div class="form-group"><label for="inTotal">Total Belanja (Rp)</label><input type="number" id="inTotal" placeholder="0" min="0" step="any" /></div>
-        </div>
-        <button class="btn-submit-form" id="btnAdd"><i class="fas fa-save"></i> Simpan Transaksi</button>
+        <form id="txForm" autocomplete="off" novalidate>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="inCoin">Coin <span class="req">*</span></label>
+              <select id="inCoin">
+                <option value="DOGE" selected>DOGE</option>
+                <option value="BTC">BTC</option>
+                <option value="ETH">ETH</option>
+                <option value="SOL">SOL</option>
+                <option value="XRP">XRP</option>
+                <option value="ADA">ADA</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="inDate">Tanggal Beli <span class="req">*</span></label>
+              <input type="date" id="inDate" />
+            </div>
+            <div class="form-group">
+              <label for="inPrice">Harga Satuan (Rp) <span class="req">*</span></label>
+              <input type="number" id="inPrice" placeholder="0" min="0" step="any" inputmode="decimal" />
+            </div>
+            <div class="form-group">
+              <label for="inTotal">Total Belanja (Rp) <span class="req">*</span></label>
+              <input type="number" id="inTotal" placeholder="0" min="0" step="any" inputmode="decimal" />
+            </div>
+          </div>
+
+          <!-- Preview jumlah koin yang akan didapat -->
+          <div class="coin-preview">
+            <span class="cp-label"><i class="fas fa-coins"></i> Estimasi Jumlah Koin</span>
+            <span class="cp-val" id="coinPreview">0</span>
+          </div>
+
+          <button type="submit" class="btn-submit-form" id="btnAdd">
+            <i class="fas fa-save"></i> Simpan Transaksi
+          </button>
+        </form>
       </div>
     </div>
   </div>
@@ -546,38 +594,102 @@
     });
 
     /* ============================================================
-       MODAL
+       MODAL — LOGIKA YANG DIPERBAIKI
        ============================================================ */
-    const modalOverlay = $('modalOverlay'), modalClose = $('modalClose'), btnOpenModal = $('btnOpenModal');
-    function isFormDirty() { return $('inPrice').value || $('inTotal').value; }
+    const modalOverlay = $('modalOverlay');
+    const modalClose   = $('modalClose');
+    const btnOpenModal = $('btnOpenModal');
+    const txForm       = $('txForm');
+
+    // Flag: apakah user benar-benar mengubah form (auto-fill TIDAK dihitung)
+    let formDirty = false;
+
+    function markDirty() { formDirty = true; }
+
+    function resetFormFields() {
+      txForm.reset();
+      $('inCoin').value  = 'DOGE';
+      $('inDate').value  = getTodayLocal();
+      $('inPrice').value = '';
+      $('inTotal').value = '';
+      $('inPrice').classList.remove('invalid');
+      $('inTotal').classList.remove('invalid');
+      $('coinPreview').textContent = '0';
+      formDirty = false;
+    }
+
+    function openModal() {
+      // Reset form dulu
+      resetFormFields();
+
+      // Tampilkan modal
+      modalOverlay.classList.add('active');
+      modalOverlay.setAttribute('aria-hidden', 'false');
+
+      // Auto-fill harga dari harga saat ini (TIDAK dianggap dirty)
+      const cp = parseFloat($('curPrice').value);
+      if (cp > 0) {
+        $('inPrice').value = Math.round(cp);
+        updateCoinPreview();
+      }
+
+      // Fokus ke field pertama setelah animasi
+      setTimeout(() => {
+        $('inPrice').focus();
+        $('inPrice').select();
+      }, 200);
+    }
+
+    function closeModal(force = false) {
+      if (!force && formDirty) {
+        const ok = confirm('Data form belum disimpan. Yakin ingin menutup?');
+        if (!ok) return;
+      }
+      modalOverlay.classList.remove('active');
+      modalOverlay.setAttribute('aria-hidden', 'true');
+      // Reset form setelah animasi tutup selesai
+      setTimeout(resetFormFields, 300);
+    }
+
     function getTodayLocal() {
       const d = new Date();
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
-    function openModal() {
-      modalOverlay.classList.add('active');
-      $('inDate').value = getTodayLocal();
-      // Isi otomatis harga satuan dari harga saat ini (kalau ada & masih kosong)
-      const cp = parseFloat($('curPrice').value);
-      if (cp > 0 && !$('inPrice').value) $('inPrice').value = Math.round(cp);
+
+    // Hitung & tampilkan preview jumlah koin
+    function updateCoinPreview() {
+      const harga = parseFloat($('inPrice').value) || 0;
+      const total = parseFloat($('inTotal').value) || 0;
+      const jumlah = (harga > 0 && total > 0) ? (total / harga) : 0;
+      $('coinPreview').textContent = jumlah > 0
+        ? jumlah.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 6 })
+        : '0';
     }
-    function closeModal(force = false) {
-      if (!force && isFormDirty()) {
-        toast('Data form belum disimpan!', 'warning');
-        modalClose.dataset.confirmClose = 'true';
-        return;
-      }
-      modalOverlay.classList.remove('active');
-      $('inPrice').value = '';
-      $('inTotal').value = '';
-      modalClose.dataset.confirmClose = 'false';
-    }
+
+    // Buka modal
     btnOpenModal.addEventListener('click', openModal);
-    modalClose.addEventListener('click', () => {
-      if (modalClose.dataset.confirmClose === 'true') closeModal(true);
-      else closeModal(false);
+
+    // Tombol close
+    modalClose.addEventListener('click', () => closeModal(false));
+
+    // Klik backdrop untuk tutup
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal(false);
     });
-    modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(false); });
+
+    // ESC untuk tutup
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+        closeModal(false);
+      }
+    });
+
+    // Deteksi user mengubah form
+    ['inCoin', 'inDate', 'inPrice', 'inTotal'].forEach(id => {
+      const el = $(id);
+      el.addEventListener('input',  () => { markDirty(); updateCoinPreview(); });
+      el.addEventListener('change', () => { markDirty(); updateCoinPreview(); });
+    });
 
     window.addEventListener('scroll', () => {
       if (window.scrollY > 10) $('mainHeader').classList.add('is-scrolled');
@@ -608,9 +720,8 @@
     /* ============================================================
        MODE HARGA: AUTO / MANUAL
        ============================================================ */
-    // true = ikuti grafik otomatis, false = input manual
     let autoPriceMode = localStorage.getItem('price_auto_mode') !== 'false';
-    let isAutoUpdating = false;   // guard supaya input event dari auto-update tidak dianggap manual
+    let isAutoUpdating = false;
 
     function applyPriceModeUI() {
       const wrap = $('priceInputWrapper');
@@ -634,7 +745,6 @@
       }
     }
 
-    // Toggle badge AUTO <-> MANUAL
     $('priceModeBadge').addEventListener('click', () => {
       autoPriceMode = !autoPriceMode;
       localStorage.setItem('price_auto_mode', autoPriceMode ? 'true' : 'false');
@@ -642,7 +752,6 @@
 
       if (autoPriceMode) {
         toast('Mode AUTO aktif — harga mengikuti grafik', 'success');
-        // Langsung tarik harga terbaru
         if (lastPrice != null) {
           isAutoUpdating = true;
           $('curPrice').value = Math.round(lastPrice);
@@ -656,7 +765,6 @@
       }
     });
 
-    // Deteksi user mengetik manual → otomatis pindah ke MANUAL
     $('curPrice').addEventListener('input', () => {
       if (isAutoUpdating) return;
       if (autoPriceMode) {
@@ -762,7 +870,6 @@
         const price = doge.idr;
         const change24h = typeof doge.idr_24h_change === 'number' ? doge.idr_24h_change : 0;
 
-        // Update label harga besar
         $('chartPriceLabel').textContent = fRp(price);
         const changeEl = $('chartChangeLabel');
         const isUp = change24h >= 0;
@@ -770,11 +877,9 @@
         changeEl.innerHTML = (isUp ? '+' : '') + change24h.toFixed(2) + '% ' +
           (isUp ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>');
 
-        // Status
         statusEl.textContent = 'Diperbarui ' + new Date().toLocaleTimeString('id-ID');
         dotEl.classList.remove('off');
 
-        // Simpan histori grafik
         const now = new Date();
         const label = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         chartLabels.push(label);
@@ -787,17 +892,15 @@
 
         lastPrice = price;
 
-        // ============================================================
-        // ⭐ AUTO-SYNC KE KOLOM "HARGA SAAT INI"
-        // ============================================================
+        // Auto-sync ke kolom Harga Saat Ini
         if (autoPriceMode) {
           const curPriceInput = $('curPrice');
           const newVal = String(Math.round(price));
           if (curPriceInput.value !== newVal) {
-            isAutoUpdating = true;         // tanda: ini update dari kode, bukan user
+            isAutoUpdating = true;
             curPriceInput.value = newVal;
             isAutoUpdating = false;
-            calc();                        // langsung hitung ulang P/L & trend
+            calc();
           }
         }
 
@@ -941,7 +1044,7 @@
     }
 
     /* ============================================================
-       RENDER
+       RENDER — pakai data-attribute + event delegation
        ============================================================ */
     function render() {
       const tbody = $('tBody');
@@ -964,9 +1067,9 @@
           '<td class="td-jumlah">' + fKoin(t.jumlah) + '</td>' +
           '<td>' + getTrendIcon(Number(t.harga), cur) + '</td>' +
           '<td><div class="action-group">' +
-            '<button class="btn-action ' + (isLocked ? 'locked' : '') + '" onclick="toggleLock(\'' + t.id + '\')">' +
+            '<button type="button" class="btn-action ' + (isLocked ? 'locked' : '') + '" data-action="lock" data-id="' + t.id + '" title="' + (isLocked ? 'Buka kunci' : 'Kunci baris') + '">' +
               '<i class="fas ' + (isLocked ? 'fa-lock' : 'fa-lock-open') + '"></i></button>' +
-            '<button class="btn-action btn-del" onclick="handleDel(\'' + t.id + '\', event)" ' + (isLocked ? 'disabled' : '') + '>' +
+            '<button type="button" class="btn-action btn-del" data-action="del" data-id="' + t.id + '" ' + (isLocked ? 'disabled' : '') + ' title="Hapus">' +
               '<i class="fas fa-trash-alt"></i></button>' +
           '</div></td>' +
         '</tr>';
@@ -974,6 +1077,23 @@
 
       $('tCnt').textContent = transactions.length + ' transaksi';
     }
+
+    // Event delegation untuk tombol lock & delete
+    $('tBody').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+
+      if (action === 'lock') {
+        toggleLock(id);
+      } else if (action === 'del') {
+        if (btn.disabled) return;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+        delTx(id);
+      }
+    });
 
     /* ============================================================
        KALKULASI
@@ -1025,10 +1145,15 @@
     }
 
     /* ============================================================
-       SIMPAN TRANSAKSI
+       SUBMIT TRANSAKSI (via form submit)
        ============================================================ */
-    $('btnAdd').addEventListener('click', async () => {
-      if (!auth.currentUser) { toast('Sesi habis, silakan login ulang', 'error'); return; }
+    txForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!auth.currentUser) {
+        toast('Sesi habis, silakan login ulang', 'error');
+        return;
+      }
 
       const coin = $('inCoin').value;
       const tanggalInput = $('inDate').value;
@@ -1036,27 +1161,46 @@
       const harga = parseFloat($('inPrice').value);
       const total = parseFloat($('inTotal').value);
 
-      if (!tanggalInput) { toast('Tanggal harus diisi', 'error'); return; }
-      if (!harga || harga <= 0) { toast('Harga harus > 0', 'error'); return; }
-      if (!total || total <= 0) { toast('Total harus > 0', 'error'); return; }
+      // Reset status invalid
+      $('inPrice').classList.remove('invalid');
+      $('inTotal').classList.remove('invalid');
+
+      // Validasi
+      if (!tanggalInput) {
+        toast('Tanggal harus diisi', 'error');
+        $('inDate').focus();
+        return;
+      }
+      if (!harga || harga <= 0) {
+        toast('Harga satuan harus lebih dari 0', 'error');
+        $('inPrice').classList.add('invalid');
+        $('inPrice').focus();
+        return;
+      }
+      if (!total || total <= 0) {
+        toast('Total belanja harus lebih dari 0', 'error');
+        $('inTotal').classList.add('invalid');
+        $('inTotal').focus();
+        return;
+      }
 
       const btn = $('btnAdd');
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
 
       const ok = await addTx({ coin, tanggal: tanggalFinal, harga, total });
-      if (ok) closeModal(true);
+
+      if (ok) {
+        // Tandai clean dulu supaya closeModal tidak minta konfirmasi
+        formDirty = false;
+        closeModal(true);
+      }
 
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-save"></i> Simpan Transaksi';
     });
 
-    function handleDel(id, ev) {
-      if (!id) return;
-      const btn = ev && ev.target ? ev.target.closest('.btn-del') : null;
-      if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
-      delTx(id);
-    }
+    /* Enter di dalam input → submit form (default browser), jadi otomatis jalan */
 
     /* ============================================================
        PARTICLES + CLOCK
@@ -1101,7 +1245,7 @@
       if (appInitialized) return;
       appInitialized = true;
 
-      applyPriceModeUI();          // ⬅️ tampilkan badge AUTO/MANUAL sesuai preferensi tersimpan
+      applyPriceModeUI();
       initParticles();
       updateClock();
       startPriceChart();
