@@ -1302,6 +1302,91 @@
             font-size: 0.7rem;
             font-weight: 600;
         }
+
+        /* ================= WHATSAPP LINK STYLING ================= */
+        a.wa-link {
+            color: #25D366;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: 0.15s;
+        }
+        a.wa-link:hover {
+            color: #128C7E;
+            text-decoration: underline;
+        }
+        a.wa-link i.fab.fa-whatsapp {
+            font-size: 0.95em;
+        }
+
+        a.tag.wa-tag {
+            text-decoration: none;
+            cursor: pointer;
+            transition: 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        a.tag.wa-tag:hover {
+            background: #25D366;
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(37, 211, 102, 0.35);
+        }
+
+        a.tamu-kontak-info {
+            text-decoration: none;
+            transition: 0.15s;
+        }
+        a.tamu-kontak-info i.fa-whatsapp {
+            color: #25D366;
+            font-size: 0.95em;
+        }
+        a.tamu-kontak-info:hover {
+            color: #128C7E;
+            text-decoration: underline;
+        }
+        a.tamu-kontak-info:hover i.fa-whatsapp {
+            color: #128C7E;
+        }
+
+        a.wa-detail {
+            color: #25D366;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: 0.15s;
+        }
+        a.wa-detail:hover {
+            color: #128C7E;
+            text-decoration: underline;
+        }
+
+        /* Badge WA khusus supaya terlihat tombol */
+        a.wa-badge {
+            background: #25D366;
+            color: white !important;
+            padding: 0.15rem 0.7rem;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+            transition: 0.15s;
+            box-shadow: 0 2px 6px rgba(37, 211, 102, 0.3);
+        }
+        a.wa-badge:hover {
+            background: #128C7E;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(37, 211, 102, 0.45);
+            color: white;
+        }
     </style>
 </head>
 <body class="not-logged-in">
@@ -2366,6 +2451,59 @@
         return typeMap[type] || 'fa-file';
     }
 
+    // ======================================================================
+    // WHATSAPP HELPER
+    // ======================================================================
+    function normalizePhoneNumber(phone) {
+        if (!phone) return '';
+        let digits = String(phone).replace(/\D/g, '');
+        if (!digits) return '';
+        // Handle format Indonesia
+        if (digits.startsWith('620')) {
+            digits = '62' + digits.slice(3);
+        } else if (digits.startsWith('0')) {
+            digits = '62' + digits.slice(1);
+        } else if (digits.startsWith('8')) {
+            digits = '62' + digits;
+        } else if (!digits.startsWith('62')) {
+            digits = '62' + digits;
+        }
+        return digits;
+    }
+
+    function getWhatsAppLink(phone, nama) {
+        const num = normalizePhoneNumber(phone);
+        if (!num || num.length < 10) return null;
+        const pesan = encodeURIComponent(
+            `Assalamualaikum${nama ? ' ' + nama : ''}, saya dari pengurus RT.`
+        );
+        return `https://wa.me/${num}?text=${pesan}`;
+    }
+
+    // Render kontak sebagai link WA — varian tag (untuk tabel)
+    function renderKontakWATag(kontak, nama, tagClass) {
+        if (!kontak || kontak === '-' || kontak.trim() === '') return '-';
+        const wa = getWhatsAppLink(kontak, nama);
+        if (!wa) return `<span class="${tagClass}"><i class="fas fa-phone"></i> ${kontak}</span>`;
+        return `<a href="${wa}" target="_blank" rel="noopener" class="${tagClass} wa-tag" title="Chat WhatsApp ${kontak}"><i class="fab fa-whatsapp"></i> ${kontak}</a>`;
+    }
+
+    // Render kontak sebagai link WA — varian plain link
+    function renderKontakWALink(kontak, nama, extraClass = '') {
+        if (!kontak || kontak === '-' || kontak.trim() === '') return '-';
+        const wa = getWhatsAppLink(kontak, nama);
+        if (!wa) return kontak;
+        return `<a href="${wa}" target="_blank" rel="noopener" class="wa-link ${extraClass}" title="Chat WhatsApp ${kontak}"><i class="fab fa-whatsapp"></i> ${kontak}</a>`;
+    }
+
+    // Render kontak untuk header modal
+    function renderKontakWADetail(kontak, nama) {
+        if (!kontak || kontak === '-' || kontak.trim() === '') return '-';
+        const wa = getWhatsAppLink(kontak, nama);
+        if (!wa) return kontak;
+        return `<a href="${wa}" target="_blank" rel="noopener" class="wa-detail" title="Chat WhatsApp ${kontak}"><i class="fab fa-whatsapp"></i> ${kontak}</a>`;
+    }
+
     function updateKeluargaDropdown() {
         const select = document.getElementById('inpKeluargaIuran');
         if (!select) return;
@@ -2456,7 +2594,7 @@
                         </td>
                         <td><span class="anggota-count-badge"><i class="fas fa-user"></i> ${k.anggota || 0}</span></td>
                         <td>${k.alamat || '-'}</td>
-                        <td><span class="tag tag-warga"><i class="fas fa-phone"></i> ${k.kontak || '-'}</span></td>
+                        <td>${renderKontakWATag(k.kontak, k.kepala, 'tag tag-warga')}</td>
                         <td>
                             <div class="btn-group">
                                 ${viewBtn}
@@ -2551,6 +2689,10 @@
                 }
                 
                 const kontak = t.kontak || t.noTelp || '-';
+                const waLink = kontak !== '-' ? getWhatsAppLink(kontak, t.nama) : null;
+                const kontakHtml = (kontak !== '-' && waLink)
+                    ? `<a href="${waLink}" target="_blank" rel="noopener" class="tamu-kontak-info" title="Chat WhatsApp ${kontak}"><i class="fab fa-whatsapp" style="color:#25D366;"></i> ${kontak}</a>`
+                    : (kontak !== '-' ? `<span class="tamu-kontak-info"><i class="fas fa-phone"></i> ${kontak}</span>` : '-');
                 
                 return `
                     <tr>
@@ -2559,9 +2701,7 @@
                             <span class="icon-tamu"><i class="fas fa-user"></i></span>
                             <span class="tamu-clickable" data-index="${index}"><strong>${t.nama || '-'}</strong></span>
                         </td>
-                        <td>
-                            ${kontak !== '-' ? `<span class="tamu-kontak-info"><i class="fas fa-phone"></i> ${kontak}</span>` : '-'}
-                        </td>
+                        <td>${kontakHtml}</td>
                         <td><span class="tag tag-tamu">${t.keperluan || '-'}</span></td>
                         <td>${t.tanggal || '-'}</td>
                         <td><span class="${cls}">${t.status}</span></td>
@@ -2867,7 +3007,7 @@
                         <i class="fas fa-code"></i> ${k.kodePos || '98362'}
                     </div>
                 </div>
-                <div class="kk-detail"><i class="fas fa-phone"></i> ${k.kontak || '-'}</div>
+                <div class="kk-detail">${renderKontakWADetail(k.kontak, k.kepala)}</div>
             </div>
             ${fileHtml}
         `;
@@ -2971,7 +3111,7 @@
                         ${t.nama || '-'}
                     </div>
                     <div class="tamu-detail">
-                        <i class="fas fa-phone"></i> ${kontak} &nbsp;|&nbsp;
+                        ${renderKontakWADetail(kontak, t.nama)} &nbsp;|&nbsp;
                         <i class="fas fa-door-open"></i> ${t.keperluan || '-'}
                     </div>
                 </div>
@@ -3011,6 +3151,10 @@
             <tr>
                 <td><strong>Pekerjaan</strong></td>
                 <td>${t.pekerjaan || '-'}</td>
+            </tr>
+            <tr>
+                <td><strong>Kontak</strong></td>
+                <td>${renderKontakWADetail(kontak, t.nama)}</td>
             </tr>
         `;
 
@@ -3200,6 +3344,11 @@
             });
         }
 
+        const waNumber = k.kontak ? normalizePhoneNumber(k.kontak) : '';
+        const kontakPdf = (waNumber && waNumber.length >= 10)
+            ? `<span style="color:#25D366;font-weight:600;">🟢 WhatsApp: ${k.kontak}</span>`
+            : (k.kontak || '-');
+
         pdfContainer.innerHTML = `
             <div style="margin-bottom:15px;">
                 <div style="font-size:22px;font-weight:700;color:#0b2b3d;">
@@ -3215,7 +3364,7 @@
                     <div style="font-weight:700;font-size:16px;color:#0b2b3d;">${k.kepala}</div>
                     <div style="color:#2a5f7a;font-size:13px;">${k.alamat || '-'} | RT ${k.rt || '001'}/RW ${k.rw || '002'} | ${k.kodePos || '98362'}</div>
                 </div>
-                <div style="color:#2a5f7a;font-size:13px;">${k.kontak || '-'}</div>
+                <div style="color:#2a5f7a;font-size:13px;">${kontakPdf}</div>
             </div>
             ${fileHtmlPdf}
             <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #dde3ed;border-radius:8px;overflow:hidden;">
