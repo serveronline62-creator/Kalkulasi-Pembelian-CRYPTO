@@ -6,6 +6,9 @@
   <title>Kalkulasi Pembelian CRYPTO</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
   <style>
     :root {
       --bg: #0b0e14; --bg2: #111621; --card: #151b28; --card2: #1a2233;
@@ -76,6 +79,18 @@
     .btn-logout:hover { border-color: var(--accent); color: var(--accent); }
     .user-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 100px; font-size: 11px; color: var(--muted); white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
     .user-chip i { color: var(--green); }
+
+    /* ============ CHART SECTION ============ */
+    .chart-section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+    .chart-title { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+    .chart-title i { color: var(--gold); }
+    .chart-price { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .chart-change { font-size: 12px; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 4px; }
+    .chart-wrapper { position: relative; height: 220px; width: 100%; }
+    .chart-status { font-size: 11px; color: var(--muted); margin-top: 10px; display: flex; align-items: center; gap: 6px; }
+    .chart-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 1.5s infinite; }
+    .chart-status .dot.off { background: var(--accent); animation: none; }
 
     .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; align-items: flex-start; justify-content: center; padding-top: 60px; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; overflow-y: auto; }
     .modal-overlay.active { opacity: 1; visibility: visible; }
@@ -185,6 +200,7 @@
       .card-value { font-size: 17px !important; }
       .current-price-section { flex-direction: column; align-items: flex-start; }
       .current-price-section input { width: 100%; }
+      .chart-wrapper { height: 180px; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
   </style>
@@ -245,6 +261,25 @@
         </div>
       </header>
 
+      <!-- ============ GRAFIK HARGA REAL-TIME ============ -->
+      <section class="chart-section">
+        <div class="chart-header">
+          <div class="chart-title"><i class="fas fa-chart-area"></i> Grafik Harga DOGE / IDR</div>
+          <div style="text-align:right;">
+            <div class="chart-price">
+              <span id="chartPriceLabel">Rp 0</span>
+              <span class="chart-change" id="chartChangeLabel">0%</span>
+            </div>
+            <div class="chart-status" id="chartStatus">
+              <span class="dot"></span> <span id="chartStatusText">Menunggu data...</span>
+            </div>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="priceChart"></canvas>
+        </div>
+      </section>
+
       <div class="add-tx-section">
         <button class="btn-add-inline" id="btnOpenModal"><i class="fas fa-plus-circle"></i> Tambah Transaksi Baru</button>
       </div>
@@ -282,7 +317,7 @@
           </table>
         </div>
       </section>
-      <footer class="footer">Data tersimpan di <a href="https://console.firebase.google.com/project/savedatabase-c936c/database/savedatabase-c936c-default-rtdb/data" target="_blank" rel="noopener">FIREBASE Realtime Database</a> &middot; Auth: <a href="https://console.firebase.google.com/project/savedatabase-c936c/authentication/users" target="_blank" rel="noopener">Firebase Authentication</a></footer>
+      <footer class="footer">Data tersimpan di <a href="https://console.firebase.google.com/project/savedatabase-c936c/database/savedatabase-c936c-default-rtdb/data" target="_blank" rel="noopener">FIREBASE Realtime Database</a> &middot; Auth: <a href="https://console.firebase.google.com/project/savedatabase-c936c/authentication/users" target="_blank" rel="noopener">Firebase Authentication</a> &middot; Grafik: CoinGecko</footer>
     </div>
 
     <div class="modal-overlay" id="modalOverlay">
@@ -303,7 +338,7 @@
   </div>
 
   <!-- ============================================================
-       FIREBASE SDK (compat) — App, Auth, Database
+       FIREBASE SDK (compat)
        ============================================================ -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -327,13 +362,11 @@
     const auth = firebase.auth();
     const db   = firebase.database();
 
-    // Path penyimpanan data di Firebase Realtime Database
     const TX_PATH   = 'transactions';
     const LOCK_PATH = 'locks';
     const txRef   = db.ref(TX_PATH);
     const lockRef = db.ref(LOCK_PATH);
 
-    // Domain yang dipakai jika user login pakai "username" saja (tanpa @)
     const USER_EMAIL_DOMAIN = '@cryptoapp.local';
 
     /* ============================================================
@@ -383,7 +416,7 @@
     }
 
     /* ============================================================
-       LOGIN FORM — Firebase Authentication (email/password)
+       LOGIN — Firebase Authentication
        ============================================================ */
     $('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -406,10 +439,8 @@
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
 
       try {
-        // Persist login antar refresh (default: LOCAL)
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         await auth.signInWithEmailAndPassword(email, pass);
-        // onAuthStateChanged akan otomatis menampilkan appScreen
         toast('Login berhasil', 'success');
         $('loginPass').value = '';
       } catch (err) {
@@ -423,9 +454,6 @@
       }
     });
 
-    /* ============================================================
-       LOGOUT
-       ============================================================ */
     $('btnLogout').addEventListener('click', async () => {
       try {
         await auth.signOut();
@@ -445,11 +473,10 @@
     let appInitialized = false;
 
     /* ============================================================
-       AUTH STATE LISTENER
+       AUTH STATE
        ============================================================ */
     auth.onAuthStateChanged((user) => {
       if (user) {
-        // Sudah login → tampilkan aplikasi
         loginScreen.classList.add('hidden');
         appScreen.style.display = 'block';
 
@@ -459,12 +486,10 @@
 
         initApp();
       } else {
-        // Belum login / logout → tampilkan login screen
         loginScreen.classList.remove('hidden');
         appScreen.style.display = 'none';
         $('userEmail').textContent = '—';
 
-        // Reset state & detach listener
         detachListeners();
         transactions = [];
         lockedRows   = [];
@@ -556,6 +581,174 @@
     }
 
     /* ============================================================
+       GRAFIK REAL-TIME — CoinGecko + Chart.js
+       ============================================================ */
+    const COINGECKO_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=dogecoin&vs_currencies=idr&include_24hr_change=true';
+    const MAX_DATA_POINTS = 60;          // ~30 menit (interval 30 detik)
+    const REFRESH_INTERVAL = 30000;      // 30 detik
+
+    let priceChart = null;
+    let chartLabels = [];
+    let chartData   = [];
+    let lastPrice   = null;
+    let chartFetchTimer = null;
+
+    function initChart() {
+      const ctx = $('priceChart').getContext('2d');
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
+      const textColor = isLight ? '#5a6478' : '#6b7d99';
+
+      priceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartLabels,
+          datasets: [{
+            label: 'DOGE / IDR',
+            data: chartData,
+            borderColor: '#f0b90b',
+            backgroundColor: 'rgba(240,185,11,0.12)',
+            borderWidth: 2,
+            tension: 0.35,
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointHoverBackgroundColor: '#f0b90b',
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: isLight ? '#fff' : '#151b28',
+              titleColor: isLight ? '#1a1a2e' : '#e6edf5',
+              bodyColor: isLight ? '#1a1a2e' : '#e6edf5',
+              borderColor: isLight ? '#d1d9e6' : '#253045',
+              borderWidth: 1,
+              padding: 10,
+              displayColors: false,
+              callbacks: {
+                label: function (context) {
+                  return 'Rp ' + Number(context.parsed.y).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: gridColor, drawBorder: false },
+              ticks: { color: textColor, font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 6 }
+            },
+            y: {
+              grid: { color: gridColor, drawBorder: false },
+              ticks: {
+                color: textColor,
+                font: { family: 'JetBrains Mono', size: 10 },
+                callback: function (v) {
+                  if (v >= 1000000) return (v / 1000000).toFixed(1) + 'jt';
+                  if (v >= 1000) return (v / 1000).toFixed(0) + 'rb';
+                  return v;
+                }
+              }
+            }
+          },
+          animation: { duration: 400, easing: 'easeOutQuart' }
+        }
+      });
+    }
+
+    async function fetchDogecoinPrice() {
+      const statusEl = $('chartStatusText');
+      const dotEl = $('chartStatus').querySelector('.dot');
+      try {
+        const res = await fetch(COINGECKO_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json();
+        const doge = json.dogecoin;
+        if (!doge || typeof doge.idr !== 'number') throw new Error('Data tidak valid');
+
+        const price = doge.idr;
+        const change24h = typeof doge.idr_24h_change === 'number' ? doge.idr_24h_change : 0;
+
+        // Update label harga
+        $('chartPriceLabel').textContent = fRp(price);
+        const changeEl = $('chartChangeLabel');
+        const isUp = change24h >= 0;
+        changeEl.textContent = (isUp ? '+' : '') + change24h.toFixed(2) + '%';
+        changeEl.style.color = isUp ? 'var(--green)' : 'var(--accent)';
+        changeEl.innerHTML = (isUp ? '+' : '') + change24h.toFixed(2) + '% ' +
+          (isUp ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>');
+
+        // Update status
+        statusEl.textContent = 'Diperbarui ' + new Date().toLocaleTimeString('id-ID');
+        dotEl.classList.remove('off');
+
+        // Simpan histori untuk grafik
+        const now = new Date();
+        const label = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        chartLabels.push(label);
+        chartData.push(price);
+
+        // Batasi jumlah titik data
+        while (chartLabels.length > MAX_DATA_POINTS) {
+          chartLabels.shift();
+          chartData.shift();
+        }
+
+        // Update chart
+        if (priceChart) {
+          priceChart.update('none');
+        }
+
+        // Auto-isi ke input "Harga Saat Ini" jika masih kosong
+        const curPriceInput = $('curPrice');
+        if (!curPriceInput.value || curPriceInput.value === '0') {
+          curPriceInput.value = Math.round(price);
+          calc();
+        }
+
+        lastPrice = price;
+        return price;
+      } catch (err) {
+        console.warn('Gagal ambil harga DOGE:', err);
+        statusEl.textContent = 'Gagal memperbarui — coba lagi';
+        dotEl.classList.add('off');
+        return null;
+      }
+    }
+
+    function startPriceChart() {
+      if (priceChart) return; // sudah jalan
+      initChart();
+      fetchDogecoinPrice();
+      chartFetchTimer = setInterval(fetchDogecoinPrice, REFRESH_INTERVAL);
+    }
+
+    function stopPriceChart() {
+      if (chartFetchTimer) {
+        clearInterval(chartFetchTimer);
+        chartFetchTimer = null;
+      }
+    }
+
+    /* Re-init chart saat tema berubah supaya warna grid ikut menyesuaikan */
+    themeToggle.addEventListener('click', () => {
+      setTimeout(() => {
+        if (priceChart) {
+          priceChart.destroy();
+          priceChart = null;
+          initChart();
+          if (chartLabels.length) priceChart.update('none');
+        }
+      }, 100);
+    });
+
+    /* ============================================================
        KONEKSI FIREBASE
        ============================================================ */
     async function checkConn() {
@@ -577,9 +770,6 @@
       }
     }
 
-    /* ============================================================
-       REALTIME LISTENER — TRANSAKSI
-       ============================================================ */
     function attachRealtimeListener() {
       if (listenerAttached) return;
       listenerAttached = true;
@@ -600,9 +790,6 @@
       });
     }
 
-    /* ============================================================
-       REALTIME LISTENER — KUNCI
-       ============================================================ */
     function syncLocks() {
       if (lockListenerAttached) return;
       lockListenerAttached = true;
@@ -823,7 +1010,7 @@
     setInterval(updateClock, 1000);
 
     /* ============================================================
-       INIT APP (setelah user login)
+       INIT
        ============================================================ */
     async function initApp() {
       if (appInitialized) return;
@@ -831,10 +1018,16 @@
 
       initParticles();
       updateClock();
+      startPriceChart();           // ⬅️ mulai grafik real-time
       await checkConn();
       attachRealtimeListener();
       syncLocks();
     }
+
+    /* Stop chart saat logout supaya tidak ada request sia-sia */
+    auth.onAuthStateChanged((user) => {
+      if (!user) stopPriceChart();
+    });
   </script>
 </body>
 </html>
