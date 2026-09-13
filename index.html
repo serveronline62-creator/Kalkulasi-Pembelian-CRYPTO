@@ -682,6 +682,79 @@
     .empty-state p { font-size: 13px; }
 
     /* ============================================================
+       SORTABLE TABLE HEADERS
+       ============================================================ */
+    thead th.sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s, background 0.2s;
+      position: relative;
+    }
+    thead th.sortable:hover { color: var(--fg); background: rgba(240,185,11,0.08); }
+    thead th.sortable.active { color: var(--gold); background: rgba(240,185,11,0.1); }
+    thead th .sort-icon {
+      margin-left: 6px;
+      font-size: 9px;
+      opacity: 0.35;
+      transition: opacity 0.2s;
+      display: inline-block;
+    }
+    thead th.sortable.active .sort-icon { opacity: 1; }
+
+    /* Mobile sort selector */
+    .sort-mobile-bar {
+      display: none;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+      align-items: center;
+      background: var(--card2);
+    }
+    .sort-mobile-bar label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .sort-mobile-bar label i { color: var(--gold); }
+    .sort-mobile-bar select {
+      flex: 1;
+      padding: 8px 32px 8px 12px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--fg);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a8ba8' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      min-height: 38px;
+    }
+    .sort-mobile-bar select:focus { outline: none; border-color: var(--gold); }
+    .sort-mobile-bar select option { background: var(--card-solid); color: var(--fg); }
+    .sort-dir-btn {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--gold);
+      font-size: 13px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .sort-dir-btn:hover { border-color: var(--gold); }
+    .sort-dir-btn:active { transform: scale(0.94); }
+
+    /* ============================================================
        TOAST
        ============================================================ */
     .toast-box {
@@ -963,6 +1036,9 @@
       .pnl-bar h3 { font-size: 11px; margin-bottom: 10px; }
       .pnl-row { padding: 10px 0; font-size: 12px; }
       .pnl-val { font-size: 12px; }
+
+      /* Sort mobile bar */
+      .sort-mobile-bar { display: flex; }
 
       /* ============================================================
          TABLE → CARD VIEW ON MOBILE
@@ -1267,13 +1343,34 @@
           <h2><i class="fas fa-list-ul"></i> Riwayat Transaksi</h2>
           <span class="table-cnt" id="tCnt">0 transaksi</span>
         </div>
+
+        <!-- SORT MOBILE BAR -->
+        <div class="sort-mobile-bar">
+          <label><i class="fas fa-sort-amount-down"></i> Urutkan:</label>
+          <select id="mobileSortSelect">
+            <option value="timestamp">Tanggal & Waktu</option>
+            <option value="coin">Coin</option>
+            <option value="harga">Harga Satuan</option>
+            <option value="total">Total Belanja</option>
+            <option value="jumlah">Jumlah Koin</option>
+          </select>
+          <button class="sort-dir-btn" id="mobileSortDir" type="button" title="Arah urutan">
+            <i class="fas fa-arrow-down-short-wide" id="mobileSortDirIcon"></i>
+          </button>
+        </div>
+
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>No</th><th>Coin</th><th>Tanggal & Waktu</th>
-                <th>Harga Satuan</th><th>Total Belanja</th>
-                <th>Jumlah Koin</th><th>P/L</th><th>Aksi</th>
+                <th>No</th>
+                <th class="sortable" data-sort="coin">Coin <i class="fas fa-sort sort-icon"></i></th>
+                <th class="sortable" data-sort="tanggal">Tanggal &amp; Waktu <i class="fas fa-sort sort-icon"></i></th>
+                <th class="sortable" data-sort="harga">Harga Satuan <i class="fas fa-sort sort-icon"></i></th>
+                <th class="sortable" data-sort="total">Total Belanja <i class="fas fa-sort sort-icon"></i></th>
+                <th class="sortable" data-sort="jumlah">Jumlah Koin <i class="fas fa-sort sort-icon"></i></th>
+                <th>P/L</th>
+                <th>Aksi</th>
               </tr>
             </thead>
             <tbody id="tBody">
@@ -1475,6 +1572,86 @@
     let listenerAttached = false;
     let lockListenerAttached = false;
     let appInitialized = false;
+
+    /* ============================================================
+       SORT STATE
+       ============================================================ */
+    let sortBy  = localStorage.getItem('sort_by')  || 'timestamp';
+    let sortDir = localStorage.getItem('sort_dir') || 'asc'; // 'asc' | 'desc'
+
+    function applySortUI() {
+      // Update ikon di header
+      document.querySelectorAll('thead th.sortable').forEach(th => {
+        const icon = th.querySelector('.sort-icon');
+        if (!icon) return;
+        if (th.dataset.sort === sortBy) {
+          th.classList.add('active');
+          th.dataset.dir = sortDir;
+          icon.className = 'fas ' + (sortDir === 'asc' ? 'fa-sort-up' : 'fa-sort-down') + ' sort-icon';
+        } else {
+          th.classList.remove('active');
+          th.removeAttribute('data-dir');
+          icon.className = 'fas fa-sort sort-icon';
+        }
+      });
+
+      // Update mobile select + tombol arah
+      const sel = $('mobileSortSelect');
+      if (sel && sel.value !== sortBy) sel.value = sortBy;
+
+      const dirIcon = $('mobileSortDirIcon');
+      if (dirIcon) {
+        dirIcon.className = 'fas ' + (sortDir === 'asc' ? 'fa-arrow-down-short-wide' : 'fa-arrow-up-wide-short');
+      }
+    }
+
+    function toggleSort(field) {
+      if (sortBy === field) {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortBy = field;
+        // Default arah: tanggal & waktu terbaru dulu, lainnya ascending
+        sortDir = (field === 'timestamp' || field === 'tanggal') ? 'desc' : 'asc';
+      }
+      localStorage.setItem('sort_by', sortBy);
+      localStorage.setItem('sort_dir', sortDir);
+      applySortUI();
+      render();
+    }
+
+    function getSortedTransactions() {
+      const arr = [...transactions];
+      const dir = sortDir === 'asc' ? 1 : -1;
+      arr.sort((a, b) => {
+        switch (sortBy) {
+          case 'coin': {
+            const av = (a.coin || '').toString();
+            const bv = (b.coin || '').toString();
+            return av.localeCompare(bv, 'id', { sensitivity: 'base' }) * dir;
+          }
+          case 'harga': {
+            return ((Number(a.harga) || 0) - (Number(b.harga) || 0)) * dir;
+          }
+          case 'total': {
+            return ((Number(a.total) || 0) - (Number(b.total) || 0)) * dir;
+          }
+          case 'jumlah': {
+            return ((Number(a.jumlah) || 0) - (Number(b.jumlah) || 0)) * dir;
+          }
+          case 'tanggal':
+          case 'timestamp':
+          default: {
+            const av = Number(a.timestamp) || 0;
+            const bv = Number(b.timestamp) || 0;
+            if (av === bv) {
+              return ((a.tanggal || '').toString()).localeCompare((b.tanggal || '').toString(), 'id') * dir;
+            }
+            return (av - bv) * dir;
+          }
+        }
+      });
+      return arr;
+    }
 
     /* ============================================================
        AUTH STATE
@@ -1982,7 +2159,9 @@
         return;
       }
 
-      tbody.innerHTML = transactions.map((t, i) => {
+      const sorted = getSortedTransactions();
+
+      tbody.innerHTML = sorted.map((t, i) => {
         const isLocked = lockedRows.includes(t.id);
         return '<tr>' +
           '<td data-label="No" style="color:var(--muted)">' + (i + 1) + '</td>' +
@@ -2018,6 +2197,29 @@
         btn.disabled = true;
         delTx(id);
       }
+    });
+
+    /* ============================================================
+       SORT EVENT LISTENERS
+       ============================================================ */
+    document.querySelectorAll('thead th.sortable').forEach(th => {
+      th.addEventListener('click', () => toggleSort(th.dataset.sort));
+    });
+
+    $('mobileSortSelect').addEventListener('change', (e) => {
+      sortBy = e.target.value;
+      sortDir = (sortBy === 'timestamp' || sortBy === 'tanggal') ? 'desc' : 'asc';
+      localStorage.setItem('sort_by', sortBy);
+      localStorage.setItem('sort_dir', sortDir);
+      applySortUI();
+      render();
+    });
+
+    $('mobileSortDir').addEventListener('click', () => {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      localStorage.setItem('sort_dir', sortDir);
+      applySortUI();
+      render();
     });
 
     /* ============================================================
@@ -2166,6 +2368,7 @@
       appInitialized = true;
 
       applyPriceModeUI();
+      applySortUI();
       initParticles();
       updateClock();
       startPriceChart();
