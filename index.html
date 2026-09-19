@@ -1577,10 +1577,9 @@
        SORT STATE
        ============================================================ */
     let sortBy  = localStorage.getItem('sort_by')  || 'timestamp';
-    let sortDir = localStorage.getItem('sort_dir') || 'asc'; // 'asc' | 'desc'
+    let sortDir = localStorage.getItem('sort_dir') || 'asc';
 
     function applySortUI() {
-      // Update ikon di header
       document.querySelectorAll('thead th.sortable').forEach(th => {
         const icon = th.querySelector('.sort-icon');
         if (!icon) return;
@@ -1595,7 +1594,6 @@
         }
       });
 
-      // Update mobile select + tombol arah
       const sel = $('mobileSortSelect');
       if (sel && sel.value !== sortBy) sel.value = sortBy;
 
@@ -1610,7 +1608,6 @@
         sortDir = sortDir === 'asc' ? 'desc' : 'asc';
       } else {
         sortBy = field;
-        // Default arah: tanggal & waktu terbaru dulu, lainnya ascending
         sortDir = (field === 'timestamp' || field === 'tanggal') ? 'desc' : 'asc';
       }
       localStorage.setItem('sort_by', sortBy);
@@ -1861,22 +1858,32 @@
           isAutoUpdating = false;
           calc();
         } else {
-          fetchDogecoinPrice();
+          fetchDogecoinPrice().then(() => calc());
         }
       } else {
         toast('Mode MANUAL aktif — kamu bisa isi harga sendiri', 'info');
       }
     });
 
-    $('curPrice').addEventListener('input', () => {
+    /* ============================================================
+       HANDLER HARGA MANUAL
+       ============================================================ */
+    function handleManualPriceInput() {
       if (isAutoUpdating) return;
+
       if (autoPriceMode) {
         autoPriceMode = false;
         localStorage.setItem('price_auto_mode', 'false');
         applyPriceModeUI();
         toast('Beralih ke mode MANUAL', 'info');
       }
-    });
+
+      // PENTING: tetap hitung ulang seperti mode AUTO
+      calc();
+    }
+
+    $('curPrice').addEventListener('input',  handleManualPriceInput);
+    $('curPrice').addEventListener('change', handleManualPriceInput);
 
     /* ============================================================
        GRAFIK REAL-TIME — CoinGecko
@@ -1944,13 +1951,22 @@
             },
             y: {
               grid: { color: gridColor, drawBorder: false },
+              /* ============================================================
+                 PERBAIKAN: label Y-axis lebih presisi (per 100 → pakai
+                 .toFixed(2) untuk rentang rb/jt, bukan pembulatan integer).
+                 Sebelumnya: 2.500 → "3rb" (dibulatkan)
+                 Sekarang   : 2.500 → "2.50rb"
+                 ============================================================ */
               ticks: {
                 color: textColor,
                 font: { family: 'JetBrains Mono', size: 10 },
+                maxTicksLimit: 8,
+                autoSkip: true,
                 callback: function (v) {
-                  if (v >= 1000000) return (v / 1000000).toFixed(1) + 'jt';
-                  if (v >= 1000) return (v / 1000).toFixed(0) + 'rb';
-                  return v;
+                  if (v >= 1000000) return (v / 1000000).toFixed(2) + 'jt';
+                  if (v >= 1000)    return (v / 1000).toFixed(2) + 'rb';
+                  if (v >= 100)     return v.toFixed(0);
+                  return v.toFixed(2);
                 }
               }
             }
@@ -1996,6 +2012,7 @@
 
         lastPrice = price;
 
+        // Hanya timpa input harga jika mode AUTO aktif
         if (autoPriceMode) {
           const curPriceInput = $('curPrice');
           const newVal = String(Math.round(price));
