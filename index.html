@@ -1673,6 +1673,14 @@
         transactions = [];
         lockedRows   = [];
         appInitialized = false;
+
+        // Reset chart runtime, tapi JANGAN hapus history di localStorage
+        if (priceChart) {
+          priceChart.destroy();
+          priceChart = null;
+        }
+        // NOTE: chartLabels/chartData TIDAK di-reset di sini supaya
+        // history tetap tersedia untuk user berikutnya / refresh.
       }
     });
 
@@ -1878,7 +1886,6 @@
         toast('Beralih ke mode MANUAL', 'info');
       }
 
-      // PENTING: tetap hitung ulang seperti mode AUTO
       calc();
     }
 
@@ -1898,7 +1905,60 @@
     let lastPrice   = null;
     let chartFetchTimer = null;
 
+    /* ============================================================
+       PERSISTENSI GRAFIK — agar tetap ada setelah refresh
+       ============================================================ */
+    const CHART_STORAGE_KEY = 'doge_chart_history';
+    const CHART_MAX_AGE = 6 * 60 * 60 * 1000; // 6 jam
+
+    function saveChartHistory() {
+      try {
+        localStorage.setItem(CHART_STORAGE_KEY, JSON.stringify({
+          labels: chartLabels,
+          data: chartData,
+          lastPrice: lastPrice,
+          savedAt: Date.now()
+        }));
+      } catch (e) {
+        console.warn('Gagal simpan history grafik:', e);
+      }
+    }
+
+    function loadChartHistory() {
+      try {
+        const raw = localStorage.getItem(CHART_STORAGE_KEY);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.labels) || !Array.isArray(parsed.data)) return false;
+
+        // Buang data yang sudah terlalu tua
+        if (parsed.savedAt && (Date.now() - parsed.savedAt) > CHART_MAX_AGE) {
+          localStorage.removeItem(CHART_STORAGE_KEY);
+          return false;
+        }
+
+        chartLabels = parsed.labels.slice();
+        chartData   = parsed.data.slice();
+        lastPrice   = (typeof parsed.lastPrice === 'number') ? parsed.lastPrice : null;
+
+        // Batasi jumlah data
+        while (chartLabels.length > MAX_DATA_POINTS) {
+          chartLabels.shift();
+          chartData.shift();
+        }
+        return chartLabels.length > 0;
+      } catch (e) {
+        console.warn('Gagal muat history grafik:', e);
+        return false;
+      }
+    }
+
     function initChart() {
+      // Muat history dari localStorage jika chartLabels masih kosong
+      if (!chartLabels.length) {
+        loadChartHistory();
+      }
+
       const ctx = $('priceChart').getContext('2d');
       const isLight = document.documentElement.getAttribute('data-theme') === 'light';
       const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
@@ -1951,12 +2011,6 @@
             },
             y: {
               grid: { color: gridColor, drawBorder: false },
-              /* ============================================================
-                 PERBAIKAN: label Y-axis lebih presisi (per 100 → pakai
-                 .toFixed(2) untuk rentang rb/jt, bukan pembulatan integer).
-                 Sebelumnya: 2.500 → "3rb" (dibulatkan)
-                 Sekarang   : 2.500 → "2.50rb"
-                 ============================================================ */
               ticks: {
                 color: textColor,
                 font: { family: 'JetBrains Mono', size: 10 },
@@ -2012,6 +2066,9 @@
 
         lastPrice = price;
 
+        // Simpan history agar tetap ada setelah refresh
+        saveChartHistory();
+
         // Hanya timpa input harga jika mode AUTO aktif
         if (autoPriceMode) {
           const curPriceInput = $('curPrice');
@@ -2036,6 +2093,22 @@
     function startPriceChart() {
       if (priceChart) return;
       initChart();
+
+      // Tampilkan data lama (jika ada) sebelum fetch baru
+      if (chartLabels.length && chartData.length) {
+        $('chartPriceLabel').textContent = fRp(chartData[chartData.length - 1]);
+        $('chartStatusText').textContent = 'Memuat data terbaru...';
+        if (priceChart) priceChart.update('none');
+      }
+
+      // Isi input harga dari data terakhir (kalau mode AUTO)
+      if (autoPriceMode && lastPrice != null) {
+        isAutoUpdating = true;
+        $('curPrice').value = Math.round(lastPrice);
+        isAutoUpdating = false;
+        calc();
+      }
+
       fetchDogecoinPrice();
       chartFetchTimer = setInterval(fetchDogecoinPrice, REFRESH_INTERVAL);
     }
@@ -2056,6 +2129,11 @@
           if (chartLabels.length) priceChart.update('none');
         }
       }, 100);
+    });
+
+    // Simpan history saat tab ditutup / di-refresh
+    window.addEventListener('beforeunload', () => {
+      if (chartLabels.length) saveChartHistory();
     });
 
     /* ============================================================
